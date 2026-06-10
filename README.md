@@ -18,6 +18,85 @@
 
 ---
 
+## ⚡ 如何使用（消费端接入）
+
+> 产物**不在 GitHub Release 的 Assets 里**（那俩 `Source code (zip/tar.gz)` 是 GitHub 给 tag 自动生成的源码归档，不是规则）。每次 CI 把 `dist/` 下的规则文件 commit 到 **`ruleset-dist` 分支** 并打 dated tag，经 **jsdelivr** 分发。直接浏览：[`ruleset-dist` 分支的 `dist/`](https://github.com/river2heaven/tongtian/tree/ruleset-dist/dist)。
+
+### 取用地址
+
+```text
+# 滚动最新（jsdelivr 约 12h 缓存刷新）：
+https://cdn.jsdelivr.net/gh/river2heaven/tongtian@ruleset-dist/dist/<文件>
+
+# 钉版本（不可变、可回退，生产推荐）：
+https://cdn.jsdelivr.net/gh/river2heaven/tongtian@ruleset-20260610-1605/dist/<文件>
+```
+
+`dist/version.json` 记录该批次钉的上游 commit + tag（回退依据）。
+
+### 每个类别的格式矩阵
+
+每类别产 `<cat>.list`（clash/surge/egern 文本）、`<cat>.srs`（sing-box 二进制）、`<cat>.singbox.json`（srs 源）；**纯 domain / 纯 ip-cidr** 类别额外产 `<cat>.mrs`（clash 二进制，3-5× 小、加载/匹配更快）。
+
+| 类别 | clash | sing-box | surge / sr / egern |
+|------|-------|----------|--------------------|
+| `cn` `reject` `gfw` `youtube` `github` `cloudflare` `telegram` `twitter` | **`.mrs`**（`behavior: domain`） | `.srs` | `.list` |
+| `geoip-cn` | **`.mrs`**（`behavior: ipcidr`） | `.srs` | `.list` |
+| `netflix` `ai` `disney`（含 regex/keyword，mrs 不支持） | `.list`（`behavior: classical`） | `.srs` | `.list` |
+
+### clash / mihomo
+
+```yaml
+rule-providers:
+  # 纯域名大表 → .mrs (behavior: domain)
+  reject:   { type: http, behavior: domain,    format: mrs,  interval: 86400, url: "https://cdn.jsdelivr.net/gh/river2heaven/tongtian@ruleset-dist/dist/reject.mrs" }
+  cn:       { type: http, behavior: domain,    format: mrs,  interval: 86400, url: "https://cdn.jsdelivr.net/gh/river2heaven/tongtian@ruleset-dist/dist/cn.mrs" }
+  # 纯 IP → .mrs (behavior: ipcidr)
+  geoip-cn: { type: http, behavior: ipcidr,    format: mrs,  interval: 86400, url: "https://cdn.jsdelivr.net/gh/river2heaven/tongtian@ruleset-dist/dist/geoip-cn.mrs" }
+  # 含 regex/keyword → .list (behavior: classical)
+  netflix:  { type: http, behavior: classical, format: text, interval: 86400, url: "https://cdn.jsdelivr.net/gh/river2heaven/tongtian@ruleset-dist/dist/netflix.list" }
+  ai:       { type: http, behavior: classical, format: text, interval: 86400, url: "https://cdn.jsdelivr.net/gh/river2heaven/tongtian@ruleset-dist/dist/ai.list" }
+rules:
+  - RULE-SET,reject,REJECT
+  - RULE-SET,ai,🚀 Proxy
+  - RULE-SET,netflix,🎬 Streaming
+  - RULE-SET,geoip-cn,DIRECT
+  - RULE-SET,cn,DIRECT
+  - MATCH,🚀 Proxy
+```
+
+### sing-box（`.srs`）
+
+```jsonc
+"route": {
+  "rule_set": [
+    { "type": "remote", "tag": "reject",  "format": "binary", "download_detour": "DIRECT", "url": "https://cdn.jsdelivr.net/gh/river2heaven/tongtian@ruleset-dist/dist/reject.srs" },
+    { "type": "remote", "tag": "netflix", "format": "binary", "download_detour": "DIRECT", "url": "https://cdn.jsdelivr.net/gh/river2heaven/tongtian@ruleset-dist/dist/netflix.srs" },
+    { "type": "remote", "tag": "cn",      "format": "binary", "download_detour": "DIRECT", "url": "https://cdn.jsdelivr.net/gh/river2heaven/tongtian@ruleset-dist/dist/cn.srs" }
+  ],
+  "rules": [
+    { "rule_set": "reject",  "outbound": "block" },
+    { "rule_set": "netflix", "outbound": "🎬 Streaming" },
+    { "rule_set": "cn",      "outbound": "direct" }
+  ]
+}
+```
+（`outbound` 名按你自己的配置改。）
+
+### surge / shadowrocket / egern（统一用 `.list`）
+
+```text
+[Rule]
+RULE-SET,https://cdn.jsdelivr.net/gh/river2heaven/tongtian@ruleset-dist/dist/reject.list,REJECT
+RULE-SET,https://cdn.jsdelivr.net/gh/river2heaven/tongtian@ruleset-dist/dist/netflix.list,🎬 Streaming
+RULE-SET,https://cdn.jsdelivr.net/gh/river2heaven/tongtian@ruleset-dist/dist/cn.list,DIRECT
+FINAL,🚀 Proxy
+```
+
+> **非致命投递**：一律 per-category `RULE-SET` 远程拉取，失败即降级、不致命；绝不用会致命 bootstrap 的整包 geodata。生产建议钉 `@<tag>` 而非滚动 `@ruleset-dist`，变更可控可回退。
+
+---
+
 ## 1. 现状与思考来源（先读这个）
 
 在选定上游之前，我们做了一次**全面的规则供应链审计**：对照已知的主流规则库，又用多角度网络搜索扇出、对抗式核实了 **80 个公开规则库**（覆盖 clash / sing-box / surge / 广告 reject / GEOIP / AI / 区域专项 / 聚合器）。
