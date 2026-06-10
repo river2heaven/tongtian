@@ -26,6 +26,7 @@ jobs:
     env:
       MANIFEST: manifest.yaml
       SINGBOX_VERSION: '1.10.7'   # 钉 sing-box CLI 版本 (产 .srs)
+      MIHOMO_VERSION: 'v1.19.27'  # 钉 mihomo CLI 版本 (产 .mrs)
     steps:
       - uses: actions/checkout@v4
 
@@ -45,6 +46,14 @@ jobs:
           curl -fsSL "https://github.com/SagerNet/sing-box/releases/download/v${SINGBOX_VERSION}/sing-box-${SINGBOX_VERSION}-linux-amd64.tar.gz" | tar xz
           sudo install -m0755 sing-box-*/sing-box /usr/local/bin/sing-box
           sing-box version
+
+      - name: Install mihomo CLI (pinned)
+        run: |
+          set -euo pipefail
+          curl -fsSL "https://github.com/MetaCubeX/mihomo/releases/download/${MIHOMO_VERSION}/mihomo-linux-amd64-${MIHOMO_VERSION}.gz" -o /tmp/mihomo.gz
+          gunzip -f /tmp/mihomo.gz
+          sudo install -m0755 /tmp/mihomo /usr/local/bin/mihomo
+          mihomo -v | head -1
 
       - name: Checkout pinned upstreams
         run: |
@@ -69,6 +78,7 @@ jobs:
             --upstreams-dir "$RUNNER_TEMP/upstreams" \
             --out "$RUNNER_TEMP/dist" \
             --sing-box "$(command -v sing-box)" \
+            --mihomo "$(command -v mihomo)" \
             --tag "$TAG"
           ls -la "$RUNNER_TEMP/dist"
 

@@ -28,6 +28,7 @@ func main() {
 	upstreamsDir := flag.String("upstreams-dir", "", "各上游 checkout 根目录（子目录名 = manifest 的 upstream key）")
 	outDir := flag.String("out", "dist", "产物输出目录")
 	singboxBin := flag.String("sing-box", "", "sing-box 可执行路径（产 .srs；空则跳过二进制）")
+	mihomoBin := flag.String("mihomo", "", "mihomo 可执行路径（为纯 domain/纯 ip-cidr 类别产 .mrs；空则跳过）")
 	buildTag := flag.String("tag", "", "构建 tag（写入 version.json，回退用）")
 	check := flag.Bool("check", false, "只校验 manifest（钉版本 / 上游引用）然后退出")
 	flag.Parse()
@@ -48,7 +49,7 @@ func main() {
 	}
 
 	res := compiler.NewResolver(m, *upstreamsDir)
-	tools := compiler.Tools{SingBox: *singboxBin}
+	tools := compiler.Tools{SingBox: *singboxBin, Mihomo: *mihomoBin}
 	built := map[string]int{}
 
 	for _, cat := range m.Categories {
