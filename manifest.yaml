@@ -70,10 +70,12 @@ categories:
   - name: gfw
     gfwlist: gfwlist
 
-  # —— AI：dlc AI 类（openai/anthropic/gemini）+ fmz200 长尾合并去重 ——
-  # bard 已被上游删除（Bard→Gemini），用 google-gemini。
+  # —— AI：dlc category-ai-!cn（dlc 官方"全部非中国 AI"聚合，include 展开 20+ 厂商：
+  #    anthropic/openai/perplexity/xai(grok)/github-copilot/cursor/windsurf/poe/groq/
+  #    huggingface/cohere/cerebras/elevenlabs/deepmind...）+ gemini 补全 + fmz200 长尾，合并去重。
+  # category-ai-!cn 的 include 不含 gemini，故单列 google-gemini；bard 已被上游删（Bard→Gemini）。
   - name: ai
-    geosite: [openai, anthropic, google-gemini]
+    geosite: ["category-ai-!cn", google-gemini]
     exclude_attrs: [ads]
     domainlists: [ai-fmz200]
 
