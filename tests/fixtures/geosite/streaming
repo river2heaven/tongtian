@@ -1,0 +1,2 @@
+# 只取 netflix 中带 @cdn 的条目（include 携带 @attr 过滤，含嵌套穿透）
+include:netflix @cdn

@@ -1,0 +1,7 @@
+# anti-AD / hagezi 风格纯域名清单
+! adguard 注释
+example.com
+*.wildcard.com
+.dotprefix.com
+||adguard.com^
+1.2.3.4

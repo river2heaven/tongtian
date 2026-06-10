@@ -1,0 +1,8 @@
+# Netflix 主域（fixture，覆盖各前缀 + @attr + include）
+netflix.com
+full:www.netflix.com
+keyword:netflix
+regexp:.*\.nflxext\.com
+nflxvideo.net @cdn
+ads.netflix.com @ads
+include:netflix-extra

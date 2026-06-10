@@ -1,0 +1,92 @@
+# 通天河 编译清单：钉上游版本 + 类别定义。
+#
+# ⚠️ 站长需填：
+#   1. repo / base_url —— 自有产物 repo + jsdelivr 基址。
+#   2. 每个 upstream 的 commit —— 真实 commit SHA 或 tag（占位符 REPLACE_* 会被
+#      Manifest.Validate() fail-fast 挡住；滚动分支 master/main/... 同样被拒）。
+#   3. 各 upstream 的 files / data_dir 路径需对照钉定 commit 复核（上游可能改目录结构）。
+#
+# 解析器与上游的对应见 README「选定的源头」。
+
+repo: "<ORG>/<REPO>"
+base_url: "https://cdn.jsdelivr.net/gh/<ORG>/<REPO>@<TAG>/dist"
+
+upstreams:
+  # —— Tier 1 骨架 ——
+  domain-list-community:
+    repo: v2fly/domain-list-community
+    commit: "REPLACE_WITH_PINNED_COMMIT"
+    data_dir: data                       # 设了 data_dir = geosite 上游
+  dnsmasq-china-list:
+    repo: felixonmars/dnsmasq-china-list
+    commit: "REPLACE_WITH_PINNED_COMMIT"
+    files: [accelerated-domains.china.conf]
+  gfwlist:                               # GFW 一手源头（base64 AutoProxy）
+    repo: gfwlist/gfwlist
+    commit: "REPLACE_WITH_PINNED_COMMIT"
+    files: [gfwlist.txt]
+  chnroutes2:                            # GEOIP-CN 一手源（IP-CIDR）
+    repo: misakaio/chnroutes2
+    commit: "REPLACE_WITH_PINNED_COMMIT"
+    files: [chnroutes.txt]
+
+  # —— Tier 2 富化：广告 reject ——
+  anti-ad:                               # CN 广告 reject 权威（纯域名）
+    repo: privacy-protection-tools/anti-AD
+    commit: "REPLACE_WITH_PINNED_COMMIT"
+    files: [anti-ad-domains.txt]
+  hagezi-pro:                            # 分级最细（onlydomains 纯域名）
+    repo: hagezi/dns-blocklists
+    commit: "REPLACE_WITH_PINNED_COMMIT"
+    files: [wildcard/pro-onlydomains.txt]
+
+  # —— Tier 2 富化：AI 长尾 cross-check（容忍 clash-list / 纯域名）——
+  ai-vpsdance:                           # AI 厂商 taxonomy 最全
+    repo: VPSDance/ai-proxy-rules
+    commit: "REPLACE_WITH_PINNED_COMMIT"
+    files: [rule/ai.list]                # 路径需对照钉定 commit 复核
+  ai-fmz200:                             # 含 Anthropic IP-CIDR / grok / pplx
+    repo: fmz200/wool_scripts
+    commit: "REPLACE_WITH_PINNED_COMMIT"
+    files: [Loon/rule/ai.list]           # 路径需对照钉定 commit 复核
+
+# 类别 → 产物（每项产 <name>.list + <name>.singbox.json[+ .srs]）。
+# 一个类别可引用多个输入源，编译器取并集 + 去重。
+categories:
+  # —— 冻结四类（geosite）——
+  - name: netflix
+    geosite: [netflix]
+    exclude_attrs: [ads]
+  - name: youtube
+    geosite: [youtube]
+    exclude_attrs: [ads]
+  - name: github
+    geosite: [github]
+  - name: cloudflare
+    geosite: [cloudflare]
+
+  # —— CN 域名 + GEOIP-CN + GFW（新血统）——
+  - name: cn
+    chinalist: dnsmasq-china-list
+  - name: geoip-cn
+    geoip: chnroutes2
+  - name: gfw
+    gfwlist: gfwlist
+
+  # —— AI：dlc AI 类 + cross-check 长尾合并去重 ——
+  - name: ai
+    geosite: [openai, anthropic, google-gemini, bard]
+    exclude_attrs: [ads]
+    domainlists: [ai-vpsdance, ai-fmz200]
+
+  # —— 广告 reject：anti-AD + hagezi 合并去重 ——
+  - name: reject
+    domainlists: [anti-ad, hagezi-pro]
+
+  # —— 流媒体 / 社交（geosite）——
+  - name: disney
+    geosite: [disney]
+  - name: telegram
+    geosite: [telegram]
+  - name: twitter
+    geosite: [twitter]

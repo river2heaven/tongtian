@@ -1,0 +1,6 @@
+# VPSDance / dler 风格 clash 规则列表
+DOMAIN-SUFFIX,claude.ai,PROXY
+DOMAIN,chat.openai.com
+DOMAIN-KEYWORD,grok
+IP-CIDR,160.79.104.0/23,PROXY
+NETFLIX,shouldskip

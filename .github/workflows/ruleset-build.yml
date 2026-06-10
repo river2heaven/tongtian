@@ -1,0 +1,98 @@
+# 通天河：自托管多格式 Ruleset 供应链 — 日更编译 + 发布。
+#
+# 拉钉版本上游 (manifest.yaml) → rulesetc 编译 → 扇出 .list/.singbox.json/.srs →
+# 发布到 ruleset-dist 分支 + 打 dated tag (jsdelivr 服务 + 一键回退)。
+#
+# 钉版本由 rulesetc --check (Manifest.Validate) 在编译前 fail-fast：占位符 / 滚动分支被拒。
+name: Build rulesets
+on:
+  schedule:
+    - cron: '23 4 * * *'   # 每日 04:23 UTC 日更
+  workflow_dispatch: {}    # 手动
+  repository_dispatch:     # 上游变更触发
+    types: [ruleset-upstream-changed]
+
+permissions:
+  contents: write          # 推 ruleset-dist 分支 + tag
+
+concurrency:
+  group: ruleset-build
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      MANIFEST: manifest.yaml
+      SINGBOX_VERSION: '1.10.7'   # 钉 sing-box CLI 版本 (产 .srs)
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - name: Validate manifest (钉版本 / 引用 — Go 侧 fail-fast)
+        run: |
+          set -euo pipefail
+          go run ./cmd/rulesetc --manifest "$MANIFEST" --check
+          echo "REPO=$(yq -r '.repo' "$MANIFEST")" >> "$GITHUB_ENV"
+
+      - name: Install sing-box CLI (pinned)
+        run: |
+          set -euo pipefail
+          curl -fsSL "https://github.com/SagerNet/sing-box/releases/download/v${SINGBOX_VERSION}/sing-box-${SINGBOX_VERSION}-linux-amd64.tar.gz" | tar xz
+          sudo install -m0755 sing-box-*/sing-box /usr/local/bin/sing-box
+          sing-box version
+
+      - name: Checkout pinned upstreams
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/upstreams"
+          for key in $(yq -r '.upstreams | keys | .[]' "$MANIFEST"); do
+            repo=$(key="$key" yq -r '.upstreams[strenv(key)].repo' "$MANIFEST")
+            commit=$(key="$key" yq -r '.upstreams[strenv(key)].commit' "$MANIFEST")
+            dst="$RUNNER_TEMP/upstreams/$key"
+            echo "→ $key: $repo @ $commit"
+            git clone --filter=blob:none "https://github.com/${repo}" "$dst"
+            git -C "$dst" checkout -q "$commit"
+          done
+
+      - name: Compile rulesets
+        run: |
+          set -euo pipefail
+          TAG="ruleset-$(date -u +%Y%m%d-%H%M)"
+          echo "TAG=$TAG" >> "$GITHUB_ENV"
+          go run ./cmd/rulesetc \
+            --manifest "$MANIFEST" \
+            --upstreams-dir "$RUNNER_TEMP/upstreams" \
+            --out "$RUNNER_TEMP/dist" \
+            --sing-box "$(command -v sing-box)" \
+            --tag "$TAG"
+          ls -la "$RUNNER_TEMP/dist"
+
+      - name: Upload artifact (always)
+        uses: actions/upload-artifact@v4
+        with:
+          name: rulesets
+          path: ${{ runner.temp }}/dist
+
+      # 发布到 ruleset-dist 分支 + tag (jsdelivr: cdn.jsdelivr.net/gh/<repo>@<TAG>/dist/...)
+      # 只在主仓库非 PR 上下文跑; fork / PR 只产 artifact 不发布。
+      - name: Publish to ruleset-dist branch
+        if: github.event_name != 'pull_request'
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout --orphan ruleset-dist
+          git reset --hard
+          mkdir -p dist
+          cp -r "$RUNNER_TEMP/dist/." dist/
+          git add dist
+          git commit -m "ruleset build ${TAG}"
+          git push -f origin ruleset-dist
+          git tag -f "${TAG}"
+          git push -f origin "${TAG}"
+          echo "::notice::已发布 ${TAG} → ruleset-dist 分支; jsdelivr: cdn.jsdelivr.net/gh/<repo>@${TAG}/dist/"

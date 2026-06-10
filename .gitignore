@@ -1,0 +1,6 @@
+# 编译产物（CI 写到这里，发到 ruleset-dist 分支）
+/dist/
+
+# 本地上游 checkout / 临时目录
+/upstreams/
+*.srs
