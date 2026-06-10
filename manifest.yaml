@@ -1,54 +1,51 @@
 # 通天河 编译清单：钉上游版本 + 类别定义。
 #
-# ⚠️ 站长需填：
-#   1. repo / base_url —— 自有产物 repo + jsdelivr 基址。
-#   2. 每个 upstream 的 commit —— 真实 commit SHA 或 tag（占位符 REPLACE_* 会被
-#      Manifest.Validate() fail-fast 挡住；滚动分支 master/main/... 同样被拒）。
-#   3. 各 upstream 的 files / data_dir 路径需对照钉定 commit 复核（上游可能改目录结构）。
+# 上游已钉到 commit SHA（2026-06-10 初次钉定）。bump：把对应 commit 换成新的 SHA/tag；
+# rollback：换回旧 SHA。占位符 / 滚动分支(master/main/...) 会被 Manifest.Validate() fail-fast 挡住。
 #
+# repo / base_url 是自有产物仓库 + jsdelivr 基址（cutover 时订阅模板引用）。
 # 解析器与上游的对应见 README「选定的源头」。
 
-repo: "<ORG>/<REPO>"
-base_url: "https://cdn.jsdelivr.net/gh/<ORG>/<REPO>@<TAG>/dist"
+repo: "river2heaven/tongtian"
+# cutover 时把 <TAG> 换成具体 ruleset-YYYYMMDD-HHMM tag（可回退）；或用 @ruleset-dist 取滚动最新
+base_url: "https://cdn.jsdelivr.net/gh/river2heaven/tongtian@<TAG>/dist"
 
 upstreams:
   # —— Tier 1 骨架 ——
   domain-list-community:
     repo: v2fly/domain-list-community
-    commit: "REPLACE_WITH_PINNED_COMMIT"
+    commit: "76199d8e61d348c58433e3c36d9d4f85131d80e7"
     data_dir: data                       # 设了 data_dir = geosite 上游
   dnsmasq-china-list:
     repo: felixonmars/dnsmasq-china-list
-    commit: "REPLACE_WITH_PINNED_COMMIT"
+    commit: "d87a5bc1d76b87a6729e9e5355c35be0fc2ff6cd"
     files: [accelerated-domains.china.conf]
   gfwlist:                               # GFW 一手源头（base64 AutoProxy）
     repo: gfwlist/gfwlist
-    commit: "REPLACE_WITH_PINNED_COMMIT"
+    commit: "e8e285a9b1597f47ff2f6f4d556f11eb0a810d30"
     files: [gfwlist.txt]
   chnroutes2:                            # GEOIP-CN 一手源（IP-CIDR）
     repo: misakaio/chnroutes2
-    commit: "REPLACE_WITH_PINNED_COMMIT"
+    commit: "581f1f60b073aa53abfe3a5da45419a67b4a6708"
     files: [chnroutes.txt]
 
   # —— Tier 2 富化：广告 reject ——
   anti-ad:                               # CN 广告 reject 权威（纯域名）
     repo: privacy-protection-tools/anti-AD
-    commit: "REPLACE_WITH_PINNED_COMMIT"
+    commit: "a8f65d8043940b20ba7ee75d402c60b885e547e6"
     files: [anti-ad-domains.txt]
   hagezi-pro:                            # 分级最细（onlydomains 纯域名）
     repo: hagezi/dns-blocklists
-    commit: "REPLACE_WITH_PINNED_COMMIT"
+    commit: "78cf5b378eb35137026142165337373bd7c3d4c3"
     files: [wildcard/pro-onlydomains.txt]
 
-  # —— Tier 2 富化：AI 长尾 cross-check（容忍 clash-list / 纯域名）——
-  ai-vpsdance:                           # AI 厂商 taxonomy 最全
-    repo: VPSDance/ai-proxy-rules
-    commit: "REPLACE_WITH_PINNED_COMMIT"
-    files: [rule/ai.list]                # 路径需对照钉定 commit 复核
-  ai-fmz200:                             # 含 Anthropic IP-CIDR / grok / pplx
+  # —— Tier 2 富化：AI 长尾 cross-check ——
+  # 注：VPSDance/ai-proxy-rules 是 per-provider YAML 源（无现成域名清单），不适配本编译器的
+  # domainlist 解析器，暂不纳入；待其有合并产物或加 YAML 解析器再补。
+  ai-fmz200:                             # 含 Anthropic/OpenAI 等长尾（DOMAIN/-SUFFIX/IP-CIDR）
     repo: fmz200/wool_scripts
-    commit: "REPLACE_WITH_PINNED_COMMIT"
-    files: [Loon/rule/ai.list]           # 路径需对照钉定 commit 复核
+    commit: "9c74d2bc3cea5c869f7a6c1b06571d285b4a3f78"
+    files: [Loon/rule/AI.list]
 
 # 类别 → 产物（每项产 <name>.list + <name>.singbox.json[+ .srs]）。
 # 一个类别可引用多个输入源，编译器取并集 + 去重。
@@ -73,11 +70,12 @@ categories:
   - name: gfw
     gfwlist: gfwlist
 
-  # —— AI：dlc AI 类 + cross-check 长尾合并去重 ——
+  # —— AI：dlc AI 类（openai/anthropic/gemini）+ fmz200 长尾合并去重 ——
+  # bard 已被上游删除（Bard→Gemini），用 google-gemini。
   - name: ai
-    geosite: [openai, anthropic, google-gemini, bard]
+    geosite: [openai, anthropic, google-gemini]
     exclude_attrs: [ads]
-    domainlists: [ai-vpsdance, ai-fmz200]
+    domainlists: [ai-fmz200]
 
   # —— 广告 reject：anti-AD + hagezi 合并去重 ——
   - name: reject
