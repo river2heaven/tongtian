@@ -3,6 +3,7 @@ package compiler
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -27,6 +28,47 @@ func ClashClassicalList(rules []ruleset.Rule) string {
 		b.WriteByte('\n')
 	}
 	return b.String()
+}
+
+// ArrsMaxRules 是 Anywhere .arrs 单文件硬上限——超限客户端**整体拒绝**该文件，
+// 故编译期就跳过产出（不静默截断）。超限大类（cn / reject / geoip-cn）由
+// Anywhere 内置 Country Bypass / ADBlock 覆盖，无需外置。
+const ArrsMaxRules = 10000
+
+// arrsType 把 MatchType 映射成 .arrs 规则类型 ID
+// （NodePassProject/Anywhere Documentations/Routing.md：0=IPv4 CIDR / 1=IPv6 CIDR /
+// 2=domain-suffix / 3=domain-keyword）。
+// DOMAIN（exact）降级为 suffix——.arrs 无 exact 类型，轻微过匹配子域；
+// DOMAIN-REGEX 无对应，不在表内 → 丢弃并计数。
+var arrsType = map[ruleset.MatchType]string{
+	ruleset.MatchIPCIDR:        "0",
+	ruleset.MatchIPCIDR6:       "1",
+	ruleset.MatchDomain:        "2",
+	ruleset.MatchDomainSuffix:  "2",
+	ruleset.MatchDomainKeyword: "3",
+}
+
+// ArrsList 渲染 Anywhere .arrs 规则集内容：头部 `name = <name>` + 规则行 `<type>, <value>`。
+// .arrs 与本模型同为 headless（文件不含 policy，动作在 App 内对整个 set 指定）。
+// 返回 kept（产物内规则数，超限判定用）与 dropped（无对应 matcher 被丢弃数，调用方告警用）。
+func ArrsList(name string, rules []ruleset.Rule) (content string, kept, dropped int) {
+	var b strings.Builder
+	b.WriteString("name = ")
+	b.WriteString(name)
+	b.WriteByte('\n')
+	for _, r := range rules {
+		id, ok := arrsType[r.Match]
+		if !ok {
+			dropped++
+			continue
+		}
+		b.WriteString(id)
+		b.WriteString(", ")
+		b.WriteString(r.Value)
+		b.WriteByte('\n')
+		kept++
+	}
+	return b.String(), kept, dropped
 }
 
 // SingboxSource 渲染 sing-box rule-set 源 JSON（version 2，支持 domain_regex / ip_cidr），
@@ -72,6 +114,7 @@ type Tools struct {
 //	<name>.singbox.json  sing-box rule-set 源
 //	<name>.srs           sing-box 二进制（仅 tools.SingBox 非空时）
 //	<name>.mrs           mihomo 二进制（仅 tools.Mihomo 非空 且 类别为纯 domain / 纯 ip-cidr）
+//	<name>.arrs          NodePass Anywhere（映射后超 ArrsMaxRules 时跳过 + 告警）
 //
 // 注：mihomo .mrs 只支持 domain / ipcidr behavior。含 DOMAIN-KEYWORD / DOMAIN-REGEX 或
 // domain+ip 混合的类别（netflix / ai / disney）无 .mrs，clash 端对它们继续用 .list（format: text）。
@@ -82,6 +125,16 @@ func WriteCategory(outDir, name string, rules []ruleset.Rule, tools Tools) error
 	}
 	listPath := filepath.Join(outDir, name+".list")
 	if err := os.WriteFile(listPath, []byte(ClashClassicalList(rules)), 0o644); err != nil {
+		return err
+	}
+	arrs, kept, dropped := ArrsList(name, rules)
+	if dropped > 0 {
+		log.Printf("⚠ %s: %d 条 matcher 无 .arrs 对应（DOMAIN-REGEX），已从 .arrs 丢弃", name, dropped)
+	}
+	if kept > ArrsMaxRules {
+		log.Printf("⚠ %s: %d 条超 .arrs 单文件上限 %d，跳过 %s.arrs（Anywhere 内置 Country Bypass/ADBlock 覆盖大类）",
+			name, kept, ArrsMaxRules, name)
+	} else if err := os.WriteFile(filepath.Join(outDir, name+".arrs"), []byte(arrs), 0o644); err != nil {
 		return err
 	}
 	src, err := SingboxSource(rules)

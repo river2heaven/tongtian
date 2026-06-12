@@ -47,7 +47,7 @@ upstreams:
     commit: "9c74d2bc3cea5c869f7a6c1b06571d285b4a3f78"
     files: [Loon/rule/AI.list]
 
-# 类别 → 产物（每项产 <name>.list + <name>.singbox.json[+ .srs]）。
+# 类别 → 产物（每项产 <name>.list + <name>.singbox.json[+ .srs] + <name>.arrs[超 10k 跳过]）。
 # 一个类别可引用多个输入源，编译器取并集 + 去重。
 categories:
   # —— 冻结四类（geosite）——
