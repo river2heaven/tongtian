@@ -31,8 +31,8 @@ func ClashClassicalList(rules []ruleset.Rule) string {
 }
 
 // ArrsMaxRules 是 Anywhere .arrs 单文件硬上限——超限客户端**整体拒绝**该文件，
-// 故编译期就跳过产出（不静默截断）。超限大类（cn / reject / geoip-cn）由
-// Anywhere 内置 Country Bypass / ADBlock 覆盖，无需外置。
+// 故编译期就跳过产出（不静默截断）。超限大类（实测 cn / reject；geoip-cn 聚合后
+// ~4k 条在限内）由 Anywhere 内置 Country Bypass / ADBlock 覆盖，无需外置。
 const ArrsMaxRules = 10000
 
 // arrsType 把 MatchType 映射成 .arrs 规则类型 ID
