@@ -1,0 +1,26 @@
+{
+  "categories": {
+    "ai": 191,
+    "cloudflare": 74,
+    "cn": 112499,
+    "disney": 161,
+    "geoip-cn": 3917,
+    "gfw": 4177,
+    "github": 61,
+    "netflix": 28,
+    "reject": 263643,
+    "telegram": 21,
+    "twitter": 24,
+    "youtube": 177
+  },
+  "tag": "ruleset-20260612-1430",
+  "upstreams": {
+    "ai-fmz200": "9c74d2bc3cea5c869f7a6c1b06571d285b4a3f78",
+    "anti-ad": "a8f65d8043940b20ba7ee75d402c60b885e547e6",
+    "chnroutes2": "581f1f60b073aa53abfe3a5da45419a67b4a6708",
+    "dnsmasq-china-list": "d87a5bc1d76b87a6729e9e5355c35be0fc2ff6cd",
+    "domain-list-community": "76199d8e61d348c58433e3c36d9d4f85131d80e7",
+    "gfwlist": "e8e285a9b1597f47ff2f6f4d556f11eb0a810d30",
+    "hagezi-pro": "78cf5b378eb35137026142165337373bd7c3d4c3"
+  }
+}
