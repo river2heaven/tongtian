@@ -2,10 +2,11 @@
 // 开源 repo: github.com/river2heaven/tongtian
 module github.com/river2heaven/tongtian
 
-go 1.22
+go 1.23
 
 require (
 	github.com/stretchr/testify v1.11.1
+	google.golang.org/protobuf v1.36.11
 	gopkg.in/yaml.v3 v3.0.1
 )
 

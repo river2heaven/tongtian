@@ -51,6 +51,8 @@ func main() {
 	res := compiler.NewResolver(m, *upstreamsDir)
 	tools := compiler.Tools{SingBox: *singboxBin, Mihomo: *mihomoBin}
 	built := map[string]int{}
+	// geosite.dat 是按 tag 索引的单文件全类目库，累积各类目规则、循环后一次性写出。
+	var geositeCats []compiler.GeositeCategory
 
 	for _, cat := range m.Categories {
 		rules, err := res.ResolveCategory(cat)
@@ -60,9 +62,16 @@ func main() {
 		if err := compiler.WriteCategory(*outDir, cat.Name, rules, tools); err != nil {
 			log.Fatalf("写 %s: %v", cat.Name, err)
 		}
+		geositeCats = append(geositeCats, compiler.GeositeCategory{Name: cat.Name, Rules: rules})
 		built[cat.Name] = len(rules)
 		log.Printf("✓ %s: %d 条规则", cat.Name, len(rules))
 	}
+
+	// 单文件 geosite.dat（xray/v2ray 原生）：全类目合一，消费端 `geosite:<tag>` 引用。
+	if err := compiler.WriteGeositeDat(*outDir, geositeCats); err != nil {
+		log.Fatalf("写 geosite.dat: %v", err)
+	}
+	log.Printf("✓ geosite.dat: %d 类目合一", len(geositeCats))
 
 	writeVersion(*outDir, *buildTag, m, built)
 	log.Printf("✓ 编译完成 → %s（%d 类别 / %d 上游）", *outDir, len(m.Categories), len(m.Upstreams))

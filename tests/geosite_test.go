@@ -6,10 +6,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"github.com/river2heaven/tongtian/compiler"
 	"github.com/river2heaven/tongtian/ruleset"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func loadFixtureGeosite(t *testing.T) *compiler.Geosite {
