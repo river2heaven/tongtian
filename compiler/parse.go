@@ -218,9 +218,15 @@ func ParseChinaList(paths ...string) ([]ruleset.Rule, error) {
 			if line == "" || strings.HasPrefix(line, "#") {
 				continue
 			}
-			// server=/baidu.com/114.114.114.114  或  ipset=/baidu.com/china
+			// 只接受 dnsmasq-china-list 真正使用的两种指令：
+			//   server=/baidu.com/114.114.114.114  或  ipset=/baidu.com/china
+			// 收紧 key（此前接受任意 key=/.../，坏上游可借 address=/domain=/ 等行混入域名）。
 			eq := strings.IndexByte(line, '=')
 			if eq < 0 {
+				continue
+			}
+			key := line[:eq]
+			if key != "server" && key != "ipset" {
 				continue
 			}
 			rest := line[eq+1:]
@@ -232,6 +238,10 @@ func ParseChinaList(paths ...string) ([]ruleset.Rule, error) {
 				continue
 			}
 			domain := parts[1]
+			// 域名形态校验：拒注入字符 + 非域名行（与扇出 SafeValue 一致的最后一道防线）。
+			if !ruleset.SafeValue(ruleset.MatchDomainSuffix, domain) {
+				continue
+			}
 			if seen[domain] {
 				continue
 			}

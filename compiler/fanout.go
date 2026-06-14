@@ -12,14 +12,45 @@ import (
 	"github.com/river2heaven/tongtian/ruleset"
 )
 
+// portableClassicalMatchers 是 clash classical `.list` 与 surge RULE-SET text **共同**支持的
+// matcher 集合。`.list` 一份产物被这两个方言（及部分下游）同时消费，故只能写两边都认的关键字。
+//
+// 关键差异：DOMAIN-REGEX 是 clash 专有的 classical 关键字，surge RULE-SET text 并不支持
+// （surge 用 URL-REGEX/DOMAIN-WILDCARD，语义/语法都不同）。若把 DOMAIN-REGEX 行写进共享
+// `.list`，surge 侧会拿到不认识的行。故 `.list` 只渲染可移植 matcher，正则规则改由
+// sing-box `.singbox.json`/.srs 与 geosite.dat（两者原生支持 regex）承载。
+var portableClassicalMatchers = map[ruleset.MatchType]bool{
+	ruleset.MatchDomain:        true,
+	ruleset.MatchDomainSuffix:  true,
+	ruleset.MatchDomainKeyword: true,
+	ruleset.MatchIPCIDR:        true,
+	ruleset.MatchIPCIDR6:       true,
+	// MatchDomainRegex 故意不在此 —— 见上方说明。
+}
+
 // ClashClassicalList 渲染 mihomo classical text rule-provider 内容：每行 `<matcher>,<value>`
 // （rule-set 文件只含 matcher，无 policy——策略在订阅引用 RULE-SET 时施加）。
 // clash（behavior: classical, format: text）与 surge（RULE-SET text）共用此格式。
-func ClashClassicalList(rules []ruleset.Rule) string {
+//
+// 安全/可移植性约束：
+//   - 跳过非可移植 matcher（DOMAIN-REGEX，surge 不支持）→ 计入 droppedRegex。
+//   - 跳过被污染的 value（含换行 / 逗号 / 控制字符，坏上游 commit 可借此注入伪造规则行）
+//     → 计入 droppedUnsafe。
+//
+// 返回 content 与两类丢弃计数，供调用方告警（不静默吞）。
+func ClashClassicalList(rules []ruleset.Rule) (content string, droppedRegex, droppedUnsafe int) {
 	var b strings.Builder
 	for _, r := range rules {
 		kw, ok := ruleset.ClashKeyword(r.Match)
 		if !ok {
+			continue
+		}
+		if !portableClassicalMatchers[r.Match] {
+			droppedRegex++ // 当前唯一非可移植项即 DOMAIN-REGEX
+			continue
+		}
+		if !ruleset.SafeValue(r.Match, r.Value) {
+			droppedUnsafe++
 			continue
 		}
 		b.WriteString(kw)
@@ -27,7 +58,7 @@ func ClashClassicalList(rules []ruleset.Rule) string {
 		b.WriteString(r.Value)
 		b.WriteByte('\n')
 	}
-	return b.String()
+	return b.String(), droppedRegex, droppedUnsafe
 }
 
 // ArrsMaxRules 是 Anywhere .arrs 单文件硬上限——超限客户端**整体拒绝**该文件，
@@ -62,6 +93,11 @@ func ArrsList(name string, rules []ruleset.Rule) (content string, kept, dropped 
 			dropped++
 			continue
 		}
+		// 被污染的 value（含换行 / 逗号 / 控制字符）会注入伪造 .arrs 规则行，丢弃并计数。
+		if !ruleset.SafeValue(r.Match, r.Value) {
+			dropped++
+			continue
+		}
 		b.WriteString(id)
 		b.WriteString(", ")
 		b.WriteString(r.Value)
@@ -89,6 +125,12 @@ func SingboxSource(rules []ruleset.Rule) (string, error) {
 		case ruleset.MatchIPCIDR, ruleset.MatchIPCIDR6:
 			key = "ip_cidr" // sing-box 用 ip_cidr 统一 v4/v6
 		default:
+			continue
+		}
+		// JSON 编码已转义控制字符（无结构注入风险），但被污染的 value 仍是畸形规则项，
+		// 与其它产物保持一致丢弃（防换行 / 逗号 / 控制字符进 sing-box 源）。
+		// DOMAIN-REGEX 在此保留（sing-box 原生支持 domain_regex）。
+		if !ruleset.SafeValue(r.Match, r.Value) {
 			continue
 		}
 		headless[key] = append(headless[key], r.Value)
@@ -124,12 +166,19 @@ func WriteCategory(outDir, name string, rules []ruleset.Rule, tools Tools) error
 		return err
 	}
 	listPath := filepath.Join(outDir, name+".list")
-	if err := os.WriteFile(listPath, []byte(ClashClassicalList(rules)), 0o644); err != nil {
+	listContent, droppedRegex, droppedUnsafe := ClashClassicalList(rules)
+	if droppedRegex > 0 {
+		log.Printf("⚠ %s: %d 条 DOMAIN-REGEX 不可移植（surge 不支持），已从 .list 丢弃（由 sing-box/geosite.dat 承载）", name, droppedRegex)
+	}
+	if droppedUnsafe > 0 {
+		log.Printf("⚠ %s: %d 条 value 含注入字符（换行/逗号/控制字符），已从 .list 丢弃", name, droppedUnsafe)
+	}
+	if err := os.WriteFile(listPath, []byte(listContent), 0o644); err != nil {
 		return err
 	}
 	arrs, kept, dropped := ArrsList(name, rules)
 	if dropped > 0 {
-		log.Printf("⚠ %s: %d 条 matcher 无 .arrs 对应（DOMAIN-REGEX），已从 .arrs 丢弃", name, dropped)
+		log.Printf("⚠ %s: %d 条无 .arrs 对应（DOMAIN-REGEX）或 value 含注入字符，已从 .arrs 丢弃", name, dropped)
 	}
 	if kept > ArrsMaxRules {
 		log.Printf("⚠ %s: %d 条超 .arrs 单文件上限 %d，跳过 %s.arrs（Anywhere 内置 Country Bypass/ADBlock 覆盖大类）",

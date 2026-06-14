@@ -106,6 +106,20 @@ func TestChinaList(t *testing.T) {
 	assert.Equal(t, 1, countRule(rules, "baidu.com"), "重复行去重")
 }
 
+// dnsmasq-china-list 收紧：只接受 server=/ipset=，其它指令（address=/local=/cache-size=）丢弃
+func TestChinaList_OnlyServerAndIpset(t *testing.T) {
+	t.Parallel()
+	rules, err := compiler.ParseChinaList(filepath.Join("fixtures", "chinalist", "mixed.conf"))
+	require.NoError(t, err)
+
+	assert.True(t, hasRule(rules, ruleset.MatchDomainSuffix, "good.com"), "server= 收")
+	assert.True(t, hasRule(rules, ruleset.MatchDomainSuffix, "good2.com"), "ipset= 收")
+	assert.True(t, hasRule(rules, ruleset.MatchDomainSuffix, "good3.com"), "server= 收")
+	assert.False(t, hasRule(rules, ruleset.MatchDomainSuffix, "evil.com"), "address= 拒")
+	assert.False(t, hasRule(rules, ruleset.MatchDomainSuffix, "evil2.com"), "local= 拒")
+	assert.Len(t, rules, 3, "仅 3 条合法 server=/ipset= 域名")
+}
+
 // fanout .list 文本（golden）
 func TestFanout_ClashList(t *testing.T) {
 	t.Parallel()
@@ -114,9 +128,11 @@ func TestFanout_ClashList(t *testing.T) {
 		{Match: ruleset.MatchDomain, Value: "www.netflix.com"},
 		{Match: ruleset.MatchDomainKeyword, Value: "netflix"},
 	}
-	got := compiler.ClashClassicalList(rules)
+	got, droppedRegex, droppedUnsafe := compiler.ClashClassicalList(rules)
 	want := "DOMAIN-SUFFIX,netflix.com\nDOMAIN,www.netflix.com\nDOMAIN-KEYWORD,netflix\n"
 	assert.Equal(t, want, got)
+	assert.Equal(t, 0, droppedRegex)
+	assert.Equal(t, 0, droppedUnsafe)
 }
 
 // fanout sing-box 源 JSON（按 type 聚合，version 2）
