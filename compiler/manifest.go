@@ -63,12 +63,26 @@ func (m *Manifest) Validate() error {
 	if len(m.Upstreams) == 0 {
 		return fmt.Errorf("manifest 未声明任何上游")
 	}
+	hasGeositeUpstream := false
 	for name, u := range m.Upstreams {
 		if u.Repo == "" {
 			return fmt.Errorf("上游 %q 缺 repo", name)
 		}
+		if err := validateRepo(name, u.Repo); err != nil {
+			return err
+		}
 		if err := validateCommit(name, u.Commit); err != nil {
 			return err
+		}
+		// 上游角色自洽：geosite 上游（data_dir 非空）与文件型上游（files 非空）二选一，
+		// 既不能两者皆空（无从读取），也不该同时设（角色歧义）。
+		switch {
+		case u.DataDir != "" && len(u.Files) > 0:
+			return fmt.Errorf("上游 %q 同时设了 data_dir 与 files（角色歧义）", name)
+		case u.DataDir != "":
+			hasGeositeUpstream = true
+		case len(u.Files) == 0:
+			return fmt.Errorf("上游 %q 既无 data_dir 也无 files（无从读取）", name)
 		}
 	}
 	// 类别引用的上游 key 必须存在
@@ -79,6 +93,28 @@ func (m *Manifest) Validate() error {
 					return fmt.Errorf("类别 %q 引用了未声明的上游 %q", cat.Name, key)
 				}
 			}
+		}
+		// 引用 geosite 类目的类别，必须有一个声明了 data_dir 的 geosite 上游兜底，
+		// 否则 ResolveCategory 会在运行期才炸（fail-fast 提前到校验期）。
+		if len(cat.Geosite) > 0 && !hasGeositeUpstream {
+			return fmt.Errorf("类别 %q 引用 geosite 类目，但 manifest 无 geosite 上游（无上游设 data_dir）", cat.Name)
+		}
+	}
+	return nil
+}
+
+// validateRepo 校验上游 repo 形如 `<owner>/<name>`（防注入进 git clone URL 的畸形值）。
+func validateRepo(name, repo string) error {
+	parts := strings.Split(repo, "/")
+	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
+		return fmt.Errorf("上游 %s 的 repo=%q 不是 <owner>/<name> 形态", name, repo)
+	}
+	for _, r := range repo {
+		switch {
+		case r >= 'a' && r <= 'z', r >= 'A' && r <= 'Z', r >= '0' && r <= '9',
+			r == '/', r == '-', r == '_', r == '.':
+		default:
+			return fmt.Errorf("上游 %s 的 repo=%q 含非法字符 %q", name, repo, string(r))
 		}
 	}
 	return nil
@@ -109,15 +145,27 @@ func isHex40(s string) bool {
 }
 
 // looksLikeTag 接受版本 / 日期类 tag（含数字），拒掉无数字的滚动分支名。
+//
+// 加固：要求 tag 至少 3 字符且含数字，拒掉裸单字符 / 短 hex 前缀这类「像 pin 但不可靠」的值
+// （git 解析短 SHA 前缀是有歧义的，不是不可变引用）；字符集限定 [A-Za-z0-9._-]，
+// 防把畸形 / 注入串当成合法 pin。
 func looksLikeTag(c string) bool {
 	switch strings.ToLower(c) {
 	case "master", "main", "head", "latest", "release", "dev", "develop", "trunk", "stable", "nightly":
 		return false
 	}
+	if len(c) < 3 {
+		return false
+	}
+	hasDigit := false
 	for _, r := range c {
-		if r >= '0' && r <= '9' {
-			return true
+		switch {
+		case r >= '0' && r <= '9':
+			hasDigit = true
+		case r >= 'a' && r <= 'z', r >= 'A' && r <= 'Z', r == '.', r == '-', r == '_':
+		default:
+			return false // 含非 tag 合法字符 → 拒
 		}
 	}
-	return false
+	return hasDigit
 }

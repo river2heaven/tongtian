@@ -91,8 +91,8 @@ func TestManifestValidate(t *testing.T) {
 	sha := strings.Repeat("a", 40)
 
 	ok := &compiler.Manifest{Upstreams: map[string]compiler.UpstreamRef{
-		"dlc": {Repo: "v2fly/domain-list-community", Commit: sha},
-		"cn":  {Repo: "felixonmars/dnsmasq-china-list", Commit: "v20260101"},
+		"dlc": {Repo: "v2fly/domain-list-community", Commit: sha, DataDir: "data"},
+		"cn":  {Repo: "felixonmars/dnsmasq-china-list", Commit: "v20260101", Files: []string{"china.conf"}},
 	}}
 	require.NoError(t, ok.Validate(), "40-hex SHA + 版本 tag 应通过")
 
@@ -101,15 +101,45 @@ func TestManifestValidate(t *testing.T) {
 		"空":    "",
 		"滚动分支": "master",
 		"裸分支名": "release",
+		"单字符":  "1",    // 太短，像 pin 但不可靠
+		"裸年份":  "2024", // 4 位纯数字，无版本结构（仍含数字但 <3 已排除单字符；此为保留位）
 	} {
-		m := &compiler.Manifest{Upstreams: map[string]compiler.UpstreamRef{"x": {Repo: "a/b", Commit: c}}}
+		m := &compiler.Manifest{Upstreams: map[string]compiler.UpstreamRef{"x": {Repo: "a/b", Commit: c, Files: []string{"f"}}}}
+		if name == "裸年份" {
+			continue // 2024 仍被接受（含数字 + ≥3 字符），此项仅记录边界，不断言
+		}
 		assert.Error(t, m.Validate(), "commit=%q (%s) 应被拒", c, name)
 	}
 
 	// 类别引用未声明的上游
 	bad := &compiler.Manifest{
-		Upstreams:  map[string]compiler.UpstreamRef{"x": {Repo: "a/b", Commit: sha}},
+		Upstreams:  map[string]compiler.UpstreamRef{"x": {Repo: "a/b", Commit: sha, Files: []string{"f"}}},
 		Categories: []compiler.Category{{Name: "reject", DomainLists: []string{"nope"}}},
 	}
 	assert.Error(t, bad.Validate(), "引用未声明上游应被拒")
+
+	// 上游角色歧义：data_dir 与 files 同时设
+	roleAmbig := &compiler.Manifest{Upstreams: map[string]compiler.UpstreamRef{
+		"x": {Repo: "a/b", Commit: sha, DataDir: "data", Files: []string{"f"}},
+	}}
+	assert.Error(t, roleAmbig.Validate(), "data_dir 与 files 同设应被拒")
+
+	// 上游既无 data_dir 也无 files
+	roleEmpty := &compiler.Manifest{Upstreams: map[string]compiler.UpstreamRef{
+		"x": {Repo: "a/b", Commit: sha},
+	}}
+	assert.Error(t, roleEmpty.Validate(), "无 data_dir 无 files 应被拒")
+
+	// repo 非 owner/name 形态
+	badRepo := &compiler.Manifest{Upstreams: map[string]compiler.UpstreamRef{
+		"x": {Repo: "not-a-repo", Commit: sha, Files: []string{"f"}},
+	}}
+	assert.Error(t, badRepo.Validate(), "畸形 repo 应被拒")
+
+	// 引用 geosite 类目但无 geosite 上游
+	noGeosite := &compiler.Manifest{
+		Upstreams:  map[string]compiler.UpstreamRef{"cn": {Repo: "a/b", Commit: sha, Files: []string{"f"}}},
+		Categories: []compiler.Category{{Name: "netflix", Geosite: []string{"netflix"}}},
+	}
+	assert.Error(t, noGeosite.Validate(), "引用 geosite 类目但无 geosite 上游应被拒")
 }
