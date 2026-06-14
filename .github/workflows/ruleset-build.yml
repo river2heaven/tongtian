@@ -40,19 +40,41 @@ jobs:
           go run ./cmd/rulesetc --manifest "$MANIFEST" --check
           echo "REPO=$(yq -r '.repo' "$MANIFEST")" >> "$GITHUB_ENV"
 
-      - name: Install sing-box CLI (pinned)
+      # 供应链加固：下载的 CLI 二进制不再「curl|tar」直接喂管道，先落盘 → 校验 sha256 → 再解包。
+      # SINGBOX_SHA256 / MIHOMO_SHA256 是钉死的归档 sha256（bump 版本时同步更新）。
+      # 校验失败即中止（fail-closed），杜绝被篡改/损坏的二进制进入 contents:write 的 CI。
+      - name: Install sing-box CLI (pinned + sha256)
+        env:
+          # v1.10.7 linux-amd64 tar.gz 的 sha256（bump 版本时务必同步更新；留空会 fail-closed）。
+          SINGBOX_SHA256: '1951a0785c8b4e1e21e0640227a49528ca772aec3d680061652e3d6b687e00fe'
         run: |
           set -euo pipefail
-          curl -fsSL "https://github.com/SagerNet/sing-box/releases/download/v${SINGBOX_VERSION}/sing-box-${SINGBOX_VERSION}-linux-amd64.tar.gz" | tar xz
-          sudo install -m0755 sing-box-*/sing-box /usr/local/bin/sing-box
+          if [ -z "${SINGBOX_SHA256}" ]; then
+            echo "::error::SINGBOX_SHA256 未钉定，拒绝安装未校验二进制。请填入 v${SINGBOX_VERSION} 归档的 sha256。"
+            exit 1
+          fi
+          archive="$RUNNER_TEMP/sing-box.tar.gz"
+          curl -fsSL "https://github.com/SagerNet/sing-box/releases/download/v${SINGBOX_VERSION}/sing-box-${SINGBOX_VERSION}-linux-amd64.tar.gz" -o "$archive"
+          echo "${SINGBOX_SHA256}  ${archive}" | sha256sum -c -
+          tar -xzf "$archive" -C "$RUNNER_TEMP"
+          sudo install -m0755 "$RUNNER_TEMP"/sing-box-*/sing-box /usr/local/bin/sing-box
           sing-box version
 
-      - name: Install mihomo CLI (pinned)
+      - name: Install mihomo CLI (pinned + sha256)
+        env:
+          # mihomo ${MIHOMO_VERSION} linux-amd64 .gz 的 sha256（bump 版本时务必同步更新；留空会 fail-closed）。
+          MIHOMO_SHA256: 'fb3e34c55844f389ff54679e5a3aec331d5ec38006c20f8dcc476fb47768a58f'
         run: |
           set -euo pipefail
-          curl -fsSL "https://github.com/MetaCubeX/mihomo/releases/download/${MIHOMO_VERSION}/mihomo-linux-amd64-${MIHOMO_VERSION}.gz" -o /tmp/mihomo.gz
-          gunzip -f /tmp/mihomo.gz
-          sudo install -m0755 /tmp/mihomo /usr/local/bin/mihomo
+          if [ -z "${MIHOMO_SHA256}" ]; then
+            echo "::error::MIHOMO_SHA256 未钉定，拒绝安装未校验二进制。请填入 ${MIHOMO_VERSION} 归档的 sha256。"
+            exit 1
+          fi
+          archive="$RUNNER_TEMP/mihomo.gz"
+          curl -fsSL "https://github.com/MetaCubeX/mihomo/releases/download/${MIHOMO_VERSION}/mihomo-linux-amd64-${MIHOMO_VERSION}.gz" -o "$archive"
+          echo "${MIHOMO_SHA256}  ${archive}" | sha256sum -c -
+          gunzip -f "$archive"
+          sudo install -m0755 "$RUNNER_TEMP/mihomo" /usr/local/bin/mihomo
           mihomo -v | head -1
 
       - name: Checkout pinned upstreams
@@ -90,19 +112,47 @@ jobs:
 
       # 发布到 ruleset-dist 分支 + tag (jsdelivr: cdn.jsdelivr.net/gh/<repo>@<TAG>/dist/...)
       # 只在主仓库非 PR 上下文跑; fork / PR 只产 artifact 不发布。
+      #
+      # 安全约束（保留回退点 / 不可变 tag）：
+      #   - 在既有 ruleset-dist 分支历史之上追加提交，不再 orphan 重写 —— 每次构建留一个
+      #     可回退的提交点（rollback 到任一历史 commit 即可）。
+      #   - 分支推送非 -f（fast-forward）：基于刚拉取的远端 tip 提交，正常推进不需要强制。
+      #   - tag 不可变：每次构建 tag 名唯一（ruleset-YYYYMMDD-HHMM），用普通 git tag /
+      #     git push（非 -f）。若同名 tag 已存在（极罕见的同分钟重跑），fail-fast 退出而非覆盖，
+      #     绝不 -f 覆盖既有发布。
       - name: Publish to ruleset-dist branch
         if: github.event_name != 'pull_request'
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git checkout --orphan ruleset-dist
-          git reset --hard
+
+          # tag 不可变：同名 tag 已存在则中止（不覆盖历史发布）。
+          if git ls-remote --exit-code --tags origin "refs/tags/${TAG}" >/dev/null 2>&1; then
+            echo "::error::tag ${TAG} 已存在于远端，拒绝覆盖（tag 不可变）。请等待下一分钟或手动处理。"
+            exit 1
+          fi
+
+          # 在既有 ruleset-dist 之上追加（保留历史回退点）；分支不存在时才新建（首次发布）。
+          if git ls-remote --exit-code --heads origin ruleset-dist >/dev/null 2>&1; then
+            git fetch origin ruleset-dist
+            git checkout -B ruleset-dist origin/ruleset-dist
+            rm -rf dist
+          else
+            echo "::notice::ruleset-dist 分支首次创建"
+            git checkout --orphan ruleset-dist
+            git rm -rf --cached . >/dev/null 2>&1 || true
+            rm -rf dist
+          fi
+
           mkdir -p dist
           cp -r "$RUNNER_TEMP/dist/." dist/
-          git add dist
+          git add -A dist
           git commit -m "ruleset build ${TAG}"
-          git push -f origin ruleset-dist
-          git tag -f "${TAG}"
-          git push -f origin "${TAG}"
-          echo "::notice::已发布 ${TAG} → ruleset-dist 分支; jsdelivr: cdn.jsdelivr.net/gh/<repo>@${TAG}/dist/"
+
+          # 分支推送非 -f（基于刚 fetch 的 tip，fast-forward）。
+          git push origin ruleset-dist
+          # tag 推送非 -f（同名已存在前面已 fail-fast）。
+          git tag "${TAG}"
+          git push origin "${TAG}"
+          echo "::notice::已发布 ${TAG} → ruleset-dist 分支（追加历史，保留回退点）; jsdelivr: cdn.jsdelivr.net/gh/<repo>@${TAG}/dist/"
