@@ -42,7 +42,6 @@ DOMAIN,servd-anthropic-website.b-cdn.net
 DOMAIN,sydney.bing.com
 DOMAIN,trae-api-sg.mchost.guru
 DOMAIN,webchannel-alkalimakersuite-pa.clients6.google.com
-DOMAIN-REGEX,^chatgpt-async-webps-prod-\S+-\d+\.webpubsub\.azure\.com$
 DOMAIN-SUFFIX,agentclientprotocol.com
 DOMAIN-SUFFIX,ai.studio
 DOMAIN-SUFFIX,aicode.googleapis.com
