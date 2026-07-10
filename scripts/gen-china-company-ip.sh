@@ -21,6 +21,7 @@ ASNS=(
   "45090 Tencent-Shenzhen"
   "133478 Tencent-Cloud-Beijing"
   "137876 Tencent-Thailand"
+  "139341 Tencent-Aceville-Intl"    # 腾讯海外注册实体 Aceville Pte(org 名不含 Tencent → 按名枚举易漏), 微信海外接入 43.152/168/175 在此
   "45102 Alibaba-China"
   "37963 Alibaba-Hangzhou"
   "134963 AlibabaCloud-Singapore"
@@ -39,6 +40,16 @@ ASNS=(
   "131486 JD"
 )
 
+# 补充显式 CIDR：无干净宣告 ASN 的腾讯海外块（ip-api 返回空 as 但 org=Tencent Cloud，如
+# 43.148/150/171/184/188）。43.128.0.0/10 是 APNIC 分给腾讯的专属海外分配（整块抽样 18 个 /12
+# 全 Tencent/Aceville/AS45090），跨 132203/45090/139341 多 ASN + 部分块无宣告 ASN → 用一条 /10
+# 兜住所有腾讯海外接入（含 empty-ASN 块），覆盖微信全部海外 mmtls 落点。
+# 教训（对抗式 review 逮出）：手工按 header org 名枚举 ASN 会漏同公司的海外别名实体
+# （腾讯的 Aceville，org 名不含 Tencent）与无宣告 ASN 的块；对有专属大块分配的公司，补显式块更稳。
+SUPPLEMENTAL_CIDRS=(
+  "43.128.0.0/10"                   # 腾讯 global 海外(Tencent Global / Aceville, 跨多 ASN + empty-ASN 块)
+)
+
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
 
@@ -48,6 +59,8 @@ trap 'rm -rf "$tmp"' EXIT
   echo "# 生成脚本: scripts/gen-china-company-ip.sh (可复现: 换 pinned SHA 重跑)"
   echo "# ASN 清单(header 逐个核对 org 名, 排除 ISP 骨干/无关公司):"
   for e in "${ASNS[@]}"; do echo "#   AS$(echo "$e" | awk '{print $1}') ($(echo "$e" | awk '{print $2}'))"; done
+  echo "# 补充显式 CIDR(无干净宣告 ASN 的腾讯海外块):"
+  for c in "${SUPPLEMENTAL_CIDRS[@]}"; do echo "#   $c"; done
   echo "#"
 } > "$OUT"
 
@@ -57,6 +70,9 @@ for e in "${ASNS[@]}"; do
     curl -fsSL -m 20 "${RAW}/${asn}/${v}-aggregated.txt" 2>/dev/null >> "$tmp/all.txt" || true
   done
 done
+
+# 补充显式 CIDR（取每行第一列，容忍行尾注释）
+for c in "${SUPPLEMENTAL_CIDRS[@]}"; do echo "$c" | awk '{print $1}' >> "$tmp/all.txt"; done
 
 # 跳注释/空行/404，取 CIDR，去重 + 版本排序
 grep -hE '^[0-9a-fA-F]' "$tmp/all.txt" | grep -vE '404' | sort -u -V >> "$OUT"
