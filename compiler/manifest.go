@@ -3,6 +3,7 @@ package compiler
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"gopkg.in/yaml.v3"
@@ -34,6 +35,10 @@ type UpstreamRef struct {
 //	gfwlist      → gfwlist 类上游 key
 //	geoip        → IP-CIDR 类上游 key（chnroutes2）
 //	domainlists  → 纯域名 / AdGuard / clash-list 类上游 key（合并：anti-AD + hagezi + AI 等）
+//	localfile    → 仓内 curated IP-CIDR 文件（相对 repo 根，如 data/china-company-ip.cidr）；
+//	               ParseGeoIP 解析。用于按 ASN 汇聚的大厂 IP 段（china-company-ip）——数据由
+//	               scripts/gen-china-company-ip.sh 从 ipverse/asn-ip 钉定 SHA 生成后入仓，
+//	               避免把 15 万目录的 ipverse 仓当 CI 上游 clone。
 type Category struct {
 	Name         string   `yaml:"name"`
 	Geosite      []string `yaml:"geosite"`
@@ -42,6 +47,7 @@ type Category struct {
 	GFWList      string   `yaml:"gfwlist"`
 	GeoIP        string   `yaml:"geoip"`
 	DomainLists  []string `yaml:"domainlists"`
+	LocalFile    string   `yaml:"localfile"`
 }
 
 // LoadManifest 读取并解析 manifest.yaml（不校验；调用方再调 Validate）。
@@ -98,6 +104,13 @@ func (m *Manifest) Validate() error {
 		// 否则 ResolveCategory 会在运行期才炸（fail-fast 提前到校验期）。
 		if len(cat.Geosite) > 0 && !hasGeositeUpstream {
 			return fmt.Errorf("类别 %q 引用 geosite 类目，但 manifest 无 geosite 上游（无上游设 data_dir）", cat.Name)
+		}
+		// localfile 必须是仓内相对路径（挡绝对路径 / .. 越权，防坏 manifest 读仓外文件）。
+		if cat.LocalFile != "" {
+			clean := filepath.Clean(cat.LocalFile)
+			if filepath.IsAbs(clean) || clean == ".." || strings.HasPrefix(clean, ".."+string(filepath.Separator)) {
+				return fmt.Errorf("类别 %q 的 localfile %q 越出仓库根（禁绝对路径 / ..）", cat.Name, cat.LocalFile)
+			}
 		}
 	}
 	return nil

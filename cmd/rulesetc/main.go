@@ -48,7 +48,8 @@ func main() {
 		log.Fatalf("必须提供 --upstreams-dir")
 	}
 
-	res := compiler.NewResolver(m, *upstreamsDir)
+	// repoRoot = manifest.yaml 所在目录，用于解析 Category.LocalFile（仓内 curated 数据文件）。
+	res := compiler.NewResolver(m, *upstreamsDir, filepath.Dir(*manifestPath))
 	tools := compiler.Tools{SingBox: *singboxBin, Mihomo: *mihomoBin}
 	built := map[string]int{}
 	// geosite.dat 是按 tag 索引的单文件全类目库，累积各类目规则、循环后一次性写出。

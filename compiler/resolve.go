@@ -3,6 +3,7 @@ package compiler
 import (
 	"fmt"
 	"path/filepath"
+	"strings"
 
 	"github.com/river2heaven/tongtian/ruleset"
 )
@@ -14,12 +15,27 @@ import (
 type Resolver struct {
 	m            *Manifest
 	upstreamsDir string
+	repoRoot     string   // 仓库根(manifest.yaml 所在目录); Category.LocalFile 相对此解析
 	geosite      *Geosite // lazy
 }
 
-// NewResolver 构造解析器。
-func NewResolver(m *Manifest, upstreamsDir string) *Resolver {
-	return &Resolver{m: m, upstreamsDir: upstreamsDir}
+// NewResolver 构造解析器。repoRoot 是 manifest.yaml 所在目录，用于解析 Category.LocalFile
+// （仓内 curated 数据文件，如 data/china-company-ip.cidr）。传空串则 localfile 类别会报错。
+func NewResolver(m *Manifest, upstreamsDir, repoRoot string) *Resolver {
+	return &Resolver{m: m, upstreamsDir: upstreamsDir, repoRoot: repoRoot}
+}
+
+// localFilePath 把 Category.LocalFile 解析为仓内绝对路径，并挡住 `..` 越权（防坏 manifest
+// 读到仓外任意文件）。
+func (r *Resolver) localFilePath(rel string) (string, error) {
+	if r.repoRoot == "" {
+		return "", fmt.Errorf("localfile %q 需要 repoRoot，但 Resolver 未配置", rel)
+	}
+	clean := filepath.Clean(rel)
+	if filepath.IsAbs(clean) || clean == ".." || strings.HasPrefix(clean, ".."+string(filepath.Separator)) {
+		return "", fmt.Errorf("localfile %q 越出仓库根（禁绝对路径 / ..）", rel)
+	}
+	return filepath.Join(r.repoRoot, clean), nil
 }
 
 func (r *Resolver) upstreamFiles(key string) ([]string, error) {
@@ -106,6 +122,21 @@ func (r *Resolver) ResolveCategory(cat Category) ([]ruleset.Rule, error) {
 			return nil, err
 		}
 		rs, err := ParseDomainList(fs...)
+		if err != nil {
+			return nil, err
+		}
+		all = append(all, rs...)
+	}
+
+	// localfile：仓内 curated IP-CIDR 文件（如 data/china-company-ip.cidr，由
+	// scripts/gen-china-company-ip.sh 从 ipverse/asn-ip 钉定 SHA 生成）。复用 ParseGeoIP
+	// （跳 # 注释、v4/v6 分流），不占外部上游、CI 无需 clone 大仓。
+	if cat.LocalFile != "" {
+		p, err := r.localFilePath(cat.LocalFile)
+		if err != nil {
+			return nil, err
+		}
+		rs, err := ParseGeoIP(p)
 		if err != nil {
 			return nil, err
 		}

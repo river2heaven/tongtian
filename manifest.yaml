@@ -70,6 +70,16 @@ categories:
   - name: gfw
     gfwlist: gfwlist
 
+  # —— 大厂 ASN 全 IP（含海外接入段）→ IP 侧直连补充 ——
+  # geoip-cn 只按「国别」收国内 IP，兜不住大厂的海外接入段（如腾讯 AS132203 的
+  # 43.128.0.0/10：微信 mmtls 裸 IP 直连的日/美接入点）。此类别按 ASN 汇聚各大厂
+  # 全部宣告 CIDR（含海外），供订阅端 `RULE-SET,china-company-ip,DIRECT`，让大厂 App
+  # 的无域名 IP 连接直连（不落兜底代理 → 不再「国内服务显示海外属地 / 图片被风控」）。
+  # 数据由 scripts/gen-china-company-ip.sh 从 ipverse/asn-ip 钉定 SHA 生成入仓
+  # （data/china-company-ip.cidr 头部记 ASN 清单 + 源 SHA；ISP 骨干/无关公司已逐个 header 核对排除）。
+  - name: china-company-ip
+    localfile: data/china-company-ip.cidr
+
   # —— AI：dlc category-ai-!cn（dlc 官方"全部非中国 AI"聚合，include 展开 20+ 厂商：
   #    anthropic/openai/perplexity/xai(grok)/github-copilot/cursor/windsurf/poe/groq/
   #    huggingface/cohere/cerebras/elevenlabs/deepmind...）+ gemini 补全 + fmz200 长尾，合并去重。
