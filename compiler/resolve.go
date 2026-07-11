@@ -143,5 +143,19 @@ func (r *Resolver) ResolveCategory(cat Category) ([]ruleset.Rule, error) {
 		all = append(all, rs...)
 	}
 
+	// localdomains：仓内 curated 域名种子（如 data/cn-extra.txt，补上游清单未收录的域名）。
+	// 复用 ParseDomainList（裸域 → DOMAIN-SUFFIX，容忍 clash 规则行与 #/! 注释）。
+	if cat.LocalDomains != "" {
+		p, err := r.localFilePath(cat.LocalDomains)
+		if err != nil {
+			return nil, err
+		}
+		rs, err := ParseDomainList(p)
+		if err != nil {
+			return nil, err
+		}
+		all = append(all, rs...)
+	}
+
 	return dedupSortRules(all), nil
 }

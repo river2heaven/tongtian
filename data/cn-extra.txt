@@ -1,0 +1,18 @@
+# CN 域名补充种子（curated）—— 补 dnsmasq-china-list 未收录（或只收了别名域）的国内服务域名。
+# 与 chinalist 并集进 cn 类别：订阅端 cn-direct 直连 + 国内 DNS 分流。
+#
+# 收录标准：服务主体在中国大陆、直连可达，且直连体验显著优于代理——云 API / IoT /
+# 大文件上传类流量走境外代理出口常被服务端风控或半路掐断（TLS unexpected EOF）。
+# 格式：裸域名（DOMAIN-SUFFIX 语义）；也接受 clash 规则行（TYPE,value）；# 注释。
+# 每次改动 CI 日更后生效；条目请附来源说明，便于日后核对。
+
+# —— Bambu Lab（拓竹 3D 打印）：打印任务发送走云端（API/MQTT/文件上传），域名被代理
+#    会导致 Studio 发送失败（curl Error 35）。上游只收了别名域 bambu-lab.com，
+#    主力域反而缺失。2026-07-11 加。——
+bambulab.com
+bambulab.cn
+# Bambu 官方 CDN（固件 / 模型 / 上传中转）
+bblmw.cn
+bblmw.com
+# MakerWorld 中国站（全球站 makerworld.com 不收，保持默认分流）
+makerworld.com.cn

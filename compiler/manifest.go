@@ -39,6 +39,10 @@ type UpstreamRef struct {
 //	               ParseGeoIP 解析。用于按 ASN 汇聚的大厂 IP 段（china-company-ip）——数据由
 //	               scripts/gen-china-company-ip.sh 从 ipverse/asn-ip 钉定 SHA 生成后入仓，
 //	               避免把 15 万目录的 ipverse 仓当 CI 上游 clone。
+//	localdomains → 仓内 curated 域名种子（相对 repo 根，如 data/cn-extra.txt）；
+//	               ParseDomainList 解析（裸域 → DOMAIN-SUFFIX，容忍 clash 规则行）。
+//	               用于补上游清单未收录的域名（如 cn 类别补 dnsmasq-china-list 的缺口），
+//	               与其它输入源并集 + 去重。
 type Category struct {
 	Name         string   `yaml:"name"`
 	Geosite      []string `yaml:"geosite"`
@@ -48,6 +52,7 @@ type Category struct {
 	GeoIP        string   `yaml:"geoip"`
 	DomainLists  []string `yaml:"domainlists"`
 	LocalFile    string   `yaml:"localfile"`
+	LocalDomains string   `yaml:"localdomains"`
 }
 
 // LoadManifest 读取并解析 manifest.yaml（不校验；调用方再调 Validate）。
@@ -105,11 +110,14 @@ func (m *Manifest) Validate() error {
 		if len(cat.Geosite) > 0 && !hasGeositeUpstream {
 			return fmt.Errorf("类别 %q 引用 geosite 类目，但 manifest 无 geosite 上游（无上游设 data_dir）", cat.Name)
 		}
-		// localfile 必须是仓内相对路径（挡绝对路径 / .. 越权，防坏 manifest 读仓外文件）。
-		if cat.LocalFile != "" {
-			clean := filepath.Clean(cat.LocalFile)
+		// localfile / localdomains 必须是仓内相对路径（挡绝对路径 / .. 越权，防坏 manifest 读仓外文件）。
+		for field, p := range map[string]string{"localfile": cat.LocalFile, "localdomains": cat.LocalDomains} {
+			if p == "" {
+				continue
+			}
+			clean := filepath.Clean(p)
 			if filepath.IsAbs(clean) || clean == ".." || strings.HasPrefix(clean, ".."+string(filepath.Separator)) {
-				return fmt.Errorf("类别 %q 的 localfile %q 越出仓库根（禁绝对路径 / ..）", cat.Name, cat.LocalFile)
+				return fmt.Errorf("类别 %q 的 %s %q 越出仓库根（禁绝对路径 / ..）", cat.Name, field, p)
 			}
 		}
 	}

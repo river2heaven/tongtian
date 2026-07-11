@@ -1,0 +1,9 @@
+# test fixture — 仓内 curated CN 域名种子（含注释 / 裸域 / clash 规则行 / 畸形行）
+# 裸域 → DOMAIN-SUFFIX
+bambulab.com
+bambulab.cn
+! 感叹号注释也跳过
+DOMAIN,api.example.cn
+DOMAIN-SUFFIX,bblmw.cn
+DOMAIN-KEYWORD,examplekw
+not a domain line ???

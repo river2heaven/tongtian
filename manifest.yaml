@@ -63,8 +63,10 @@ categories:
     geosite: [cloudflare]
 
   # —— CN 域名 + GEOIP-CN + GFW（新血统）——
+  # cn = dnsmasq-china-list ∪ data/cn-extra.txt（仓内 curated 种子，补上游缺口，如 Bambu Lab）
   - name: cn
     chinalist: dnsmasq-china-list
+    localdomains: data/cn-extra.txt
   - name: geoip-cn
     geoip: chnroutes2
   - name: gfw
