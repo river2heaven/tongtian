@@ -1,0 +1,4 @@
+# 白名单 fixture：按域名树剔除
+example.com
+# clash 规则行也接受
+DOMAIN-SUFFIX,media.test

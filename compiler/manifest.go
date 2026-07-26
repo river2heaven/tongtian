@@ -43,16 +43,23 @@ type UpstreamRef struct {
 //	               ParseDomainList 解析（裸域 → DOMAIN-SUFFIX，容忍 clash 规则行）。
 //	               用于补上游清单未收录的域名（如 cn 类别补 dnsmasq-china-list 的缺口），
 //	               与其它输入源并集 + 去重。
+//	exclude_domains → 仓内 curated 域名白名单（相对 repo 根，如 data/reject-allowlist.txt）；
+//	               **减法**：并集算完后，把命中白名单的域名规则剔除。语义按域名树——
+//	               白名单写 example.com 即剔除 example.com 本身及其所有子域规则。
+//	               用于修上游清单的误杀（如广告库把某家的媒体 CDN 一并封掉，
+//	               导致该 App 图片/媒体加载失败），不必因个别误判整个弃用上游。
+//	               只作用于 DOMAIN / DOMAIN-SUFFIX 规则，不动 IP-CIDR 与 keyword/regex。
 type Category struct {
-	Name         string   `yaml:"name"`
-	Geosite      []string `yaml:"geosite"`
-	ExcludeAttrs []string `yaml:"exclude_attrs"`
-	ChinaList    string   `yaml:"chinalist"`
-	GFWList      string   `yaml:"gfwlist"`
-	GeoIP        string   `yaml:"geoip"`
-	DomainLists  []string `yaml:"domainlists"`
-	LocalFile    string   `yaml:"localfile"`
-	LocalDomains string   `yaml:"localdomains"`
+	Name           string   `yaml:"name"`
+	Geosite        []string `yaml:"geosite"`
+	ExcludeAttrs   []string `yaml:"exclude_attrs"`
+	ChinaList      string   `yaml:"chinalist"`
+	GFWList        string   `yaml:"gfwlist"`
+	GeoIP          string   `yaml:"geoip"`
+	DomainLists    []string `yaml:"domainlists"`
+	LocalFile      string   `yaml:"localfile"`
+	LocalDomains   string   `yaml:"localdomains"`
+	ExcludeDomains string   `yaml:"exclude_domains"`
 }
 
 // LoadManifest 读取并解析 manifest.yaml（不校验；调用方再调 Validate）。
@@ -110,8 +117,13 @@ func (m *Manifest) Validate() error {
 		if len(cat.Geosite) > 0 && !hasGeositeUpstream {
 			return fmt.Errorf("类别 %q 引用 geosite 类目，但 manifest 无 geosite 上游（无上游设 data_dir）", cat.Name)
 		}
-		// localfile / localdomains 必须是仓内相对路径（挡绝对路径 / .. 越权，防坏 manifest 读仓外文件）。
-		for field, p := range map[string]string{"localfile": cat.LocalFile, "localdomains": cat.LocalDomains} {
+		// localfile / localdomains / exclude_domains 必须是仓内相对路径
+		// （挡绝对路径 / .. 越权，防坏 manifest 读仓外文件）。
+		for field, p := range map[string]string{
+			"localfile":       cat.LocalFile,
+			"localdomains":    cat.LocalDomains,
+			"exclude_domains": cat.ExcludeDomains,
+		} {
 			if p == "" {
 				continue
 			}

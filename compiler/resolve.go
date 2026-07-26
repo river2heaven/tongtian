@@ -157,5 +157,24 @@ func (r *Resolver) ResolveCategory(cat Category) ([]ruleset.Rule, error) {
 		all = append(all, rs...)
 	}
 
+	// exclude_domains：仓内 curated 白名单（如 data/reject-allowlist.txt）。**减法**，
+	// 必须在所有输入源并集之后执行——否则先并后加的源会把已剔除的域名带回来。
+	// 复用 ParseDomainList 读白名单（同样容忍裸域 / clash 规则行 / #! 注释）。
+	if cat.ExcludeDomains != "" {
+		p, err := r.localFilePath(cat.ExcludeDomains)
+		if err != nil {
+			return nil, err
+		}
+		rs, err := ParseDomainList(p)
+		if err != nil {
+			return nil, err
+		}
+		allow := make([]string, 0, len(rs))
+		for _, x := range rs {
+			allow = append(allow, x.Value)
+		}
+		all = excludeDomainTree(all, allow)
+	}
+
 	return dedupSortRules(all), nil
 }
