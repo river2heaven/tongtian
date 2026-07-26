@@ -91,9 +91,12 @@ categories:
     exclude_attrs: [ads]
     domainlists: [ai-fmz200]
 
-  # —— 广告 reject：anti-AD + hagezi 合并去重 ——
+  # —— 广告 reject：anti-AD + hagezi 合并去重，再减去 curated 白名单 ——
+  # 白名单修上游误杀：广告库为拦 App 内嵌广告，常把该 App 的媒体 CDN / 核心服务
+  # 一并收录，表现为图片/媒体加载不出（详见 data/reject-allowlist.txt 头部）。
   - name: reject
     domainlists: [anti-ad, hagezi-pro]
+    exclude_domains: data/reject-allowlist.txt
 
   # —— 流媒体 / 社交（geosite）——
   - name: disney

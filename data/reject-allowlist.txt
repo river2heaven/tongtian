@@ -1,0 +1,43 @@
+# reject 类别白名单（curated）—— 从合并后的广告库里**剔除**的域名。
+#
+# 背景：上游广告库（anti-AD / hagezi）为了拦截某些 App 的内嵌广告，会把该 App 的
+# 媒体 CDN、遥测端点、甚至核心服务域名一并收录。对只想去广告的用户，这属于误杀：
+# 表现为 App 的图片/视频加载不出、或功能间歇失败，且**症状与网络故障极像**——
+# 用户几乎不会怀疑到广告规则头上，排查成本极高。
+#
+# 收录标准：域名承载 App 的**功能性内容**（媒体 CDN / 长连接 / 平台后端 / 支付），
+# 而非纯广告位。判定优先看 CNAME 链指向的真实后端，不靠域名字面猜测——
+# 字面像广告的域名可能 CNAME 到功能后端，反之亦然。
+#
+# 语义：按域名树剔除。写 example.com 即剔除 example.com 及其所有子域，
+# 上游日后新增子域也自动覆盖，不必逐个枚举。
+# 格式：裸域名；也接受 clash 规则行（TYPE,value）；# 注释。
+
+# —— 微信 / WeChat ——
+# 上游把微信的媒体 CDN 与核心服务大量收录（anti-AD 与 hagezi 各收一半、互有重叠），
+# 其中 wxs.qq.com 是 DOMAIN-SUFFIX，一条通杀全部 *.wxs.qq.com：
+#   wximg（聊天图片）· wxsnsdy / wxsnsdythumb（朋友圈图片与缩略图）· wxa（小程序）· wxsmw
+# 启用广告拦截后表现为：聊天与朋友圈图片长期停在模糊缩略图、大图永不加载。
+# 另有两条比图片更严重的误杀：
+#   szlong.weixin.qq.com  —— 长连接服务器（收发消息的命脉），被 hagezi 当遥测收录
+#   report.trade.weixin.qq.com —— CNAME 指向 v6.trade.weixin.qq.com（支付交易后端）
+# 以及两条被字面误判的：
+#   ad.weixin.qq.com / as.weixin.qq.com —— 二者 CNAME 均指向 mpv6.weixin.qq.com
+#                                          → sh.mp.weixin.qq.com（公众平台后端）
+#   gvideo.qpic.cn  —— CNAME 含 svideolego（短视频 CDN），serve 真实视频
+#   mmgame.qpic.cn  —— CNAME 含 legopic1，与 mmbiz.qpic.cn 同一图片 CDN 后端
+# 综合以上，微信系整体放行（宁可漏掉几条广告，也不接受功能性误杀）。
+# 2026-07-26 加。
+weixin.qq.com
+weixin.qq.com.cn
+wxs.qq.com
+wechat.com
+weixinbridge.com
+wechatpay.cn
+# 腾讯媒体 CDN（微信图片/视频主力：mmbiz / mmsns / gvideo / mmgame 均在此）
+qpic.cn
+qlogo.cn
+# 朋友圈媒体散落在 tc.qq.com / video.qq.com 下（这两个父域不整体放行，逐条列）
+wxsnsdy.tc.qq.com
+wxsnsdy.video.qq.com
+wxsnsad.tc.qq.com

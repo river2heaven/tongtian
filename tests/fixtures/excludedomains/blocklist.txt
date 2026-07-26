@@ -1,0 +1,10 @@
+# 被剔除的
+example.com
+ads.example.com
+deep.sub.example.com
+media.test
+img.media.test
+# 不该被剔除的（兄弟域 / 名字相似但非子域）
+notexample.com
+example.com.evil.net
+other.test

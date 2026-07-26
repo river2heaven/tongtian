@@ -19,6 +19,52 @@ import (
 //
 // 所有解析器都产 *headless* 规则（无策略），并在出口去重 + 稳定排序（golden 可比对）。
 
+// excludeDomainTree 从 in 里剔除命中白名单的域名规则（exclude_domains 的减法语义）。
+//
+// 命中判定按**域名树**：白名单条目 example.com 剔除 example.com 本身，以及所有以
+// .example.com 结尾的子域规则（如 ads.example.com）。这样白名单只需写一条根域，
+// 不必枚举上游收录的每个子域——上游日后新增子域也自动被覆盖。
+//
+// 只作用于 DOMAIN / DOMAIN-SUFFIX：
+//   - IP-CIDR/IP-CIDR6 与域名无关，原样保留；
+//   - DOMAIN-KEYWORD / DOMAIN-REGEX 是模糊匹配，无法与域名树对齐，原样保留
+//     （本编译器的 domainlist 解析器只产 DOMAIN-SUFFIX，实践中不受影响）。
+//
+// allow 里的条目已由 ParseDomainList 归一（小写、去前导点）。
+func excludeDomainTree(in []ruleset.Rule, allow []string) []ruleset.Rule {
+	if len(allow) == 0 {
+		return in
+	}
+	set := make(map[string]bool, len(allow))
+	for _, d := range allow {
+		if d = strings.ToLower(strings.TrimPrefix(strings.TrimSpace(d), ".")); d != "" {
+			set[d] = true
+		}
+	}
+	blocked := func(v string) bool {
+		v = strings.ToLower(strings.TrimPrefix(v, "."))
+		// 自身命中，或任一父域在白名单里（逐级上溯，O(标签数)）。
+		for {
+			if set[v] {
+				return true
+			}
+			i := strings.IndexByte(v, '.')
+			if i < 0 {
+				return false
+			}
+			v = v[i+1:]
+		}
+	}
+	out := in[:0:0]
+	for _, r := range in {
+		if (r.Match == ruleset.MatchDomain || r.Match == ruleset.MatchDomainSuffix) && blocked(r.Value) {
+			continue
+		}
+		out = append(out, r)
+	}
+	return out
+}
+
 // dedupSortDomains 按 Match|Value 去重，按 (Match,Value) 稳定排序。
 func dedupSortRules(in []ruleset.Rule) []ruleset.Rule {
 	seen := make(map[string]bool, len(in))
