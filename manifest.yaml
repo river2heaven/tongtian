@@ -105,3 +105,24 @@ categories:
     geosite: [telegram]
   - name: twitter
     geosite: [twitter]
+
+  # —— 账号体系边界类别（2026-08-19）——
+  # 动因：规则集按「服务类型」切，而账号会话按「服务商」划，两个维度不对齐。
+  # 典型：gemini 归 ai、accounts/www.google 归 gfw、youtube 归 youtube —— 同一个
+  # Google 账号被拆到三个类别；消费端若把它们指向不同出口，同一会话即出现多个源 IP，
+  # 触发风控（实测：Gemini 报「异常流量」并列出两个不相等的 IP）。同理 grok.x.com /
+  # x.ai 归 ai 而 x.com 归 twitter，同属一个 X 账号却被拆开。
+  #
+  # 解法：本层提供「按服务商聚合」的类别，消费端用规则顺序组合出所需边界。例如
+  # `RULE-SET,youtube→A` 后接 `RULE-SET,google→B`，即把 YouTube 摘出、其余 Google
+  # （含 gemini）归一处；`RULE-SET,xai` 与 `RULE-SET,twitter` 指同一组，即让 grok 与
+  # x.com 同出口。**纯加法**：ai / twitter / youtube 三个既有类别不变，不使用者零影响。
+  #
+  # ⚠ 上游 google 含 include:youtube 与 include:google-deepmind(=gemini)，故消费端若要
+  #   YouTube 独立，youtube 规则必须排在 google 之前（Clash/mihomo 首次匹配生效）。
+  - name: google
+    geosite: [google]
+    exclude_attrs: [ads]
+  # xai = grok.com / grok.x.com / grokipedia.com / x.ai（上游 twitter 类别不含这些）
+  - name: xai
+    geosite: [xai]
