@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"gopkg.in/yaml.v3"
@@ -77,6 +78,16 @@ func LoadManifest(path string) (*Manifest, error) {
 
 // Validate fail-fast 校验所有上游已钉真实版本（40 位 SHA 或合法 tag），
 // 顶掉占位符与滚动分支（master/main/...）。校验在 Go 侧而非只在 CI shell。
+// sortedKeys 返回 map 的有序 key —— 让校验报错信息稳定可复现（map 遍历顺序不定）。
+func sortedKeys(m map[string]UpstreamRef) []string {
+	ks := make([]string, 0, len(m))
+	for k := range m {
+		ks = append(ks, k)
+	}
+	sort.Strings(ks)
+	return ks
+}
+
 func (m *Manifest) Validate() error {
 	if len(m.Upstreams) == 0 {
 		return fmt.Errorf("manifest 未声明任何上游")
@@ -102,6 +113,23 @@ func (m *Manifest) Validate() error {
 		case len(u.Files) == 0:
 			return fmt.Errorf("上游 %q 既无 data_dir 也无 files（无从读取）", name)
 		}
+	}
+	// 同一个 repo 被多个 key 引用时（如 dnsmasq-china-list 与 dnsmasq-china-list-apple
+	// 各取该仓的不同文件），commit 必须一致：CI 按 key 独立 clone，若两 key 的 SHA 漂移，
+	// 同仓不同文件会来自不同版本 —— 静默不一致，且 bump 时极易只改一处。
+	repoCommits := make(map[string]string) // repo -> 首个见到的 commit
+	repoFirstKey := make(map[string]string)
+	for _, name := range sortedKeys(m.Upstreams) {
+		u := m.Upstreams[name]
+		if prev, ok := repoCommits[u.Repo]; ok {
+			if prev != u.Commit {
+				return fmt.Errorf("上游 %q 与 %q 同为 repo %q 但 commit 不一致（%s vs %s）—— 同仓多 key 必须同 SHA",
+					repoFirstKey[u.Repo], name, u.Repo, prev, u.Commit)
+			}
+			continue
+		}
+		repoCommits[u.Repo] = u.Commit
+		repoFirstKey[u.Repo] = name
 	}
 	// 类别引用的上游 key 必须存在
 	for _, cat := range m.Categories {

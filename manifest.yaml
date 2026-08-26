@@ -20,6 +20,15 @@ upstreams:
     repo: felixonmars/dnsmasq-china-list
     commit: "d87a5bc1d76b87a6729e9e5355c35be0fc2ff6cd"
     files: [accelerated-domains.china.conf]
+  # 同 repo 同 SHA，只取 apple.china.conf。上游把 Apple 的中国 CDN 域名**独立成文件**
+  # （不并入 accelerated-domains.china.conf），是刻意的策略分离：Apple 中国区 CDN 该不该走
+  # 国内解析/直连，牵涉 App Store / iCloud / Siri 等账号敏感服务，并非所有消费端都要。
+  # 故本层同样单列类别（见 categories.apple-cn），不混进 cn。
+  # ⚠ commit 必须与 dnsmasq-china-list 一致 —— Validate 有守卫（同 repo 多 key 必须同 SHA）。
+  dnsmasq-china-list-apple:
+    repo: felixonmars/dnsmasq-china-list
+    commit: "d87a5bc1d76b87a6729e9e5355c35be0fc2ff6cd"
+    files: [apple.china.conf]
   gfwlist:                               # GFW 一手源头（base64 AutoProxy）
     repo: gfwlist/gfwlist
     commit: "e8e285a9b1597f47ff2f6f4d556f11eb0a810d30"
@@ -126,3 +135,17 @@ categories:
   # xai = grok.com / grok.x.com / grokipedia.com / x.ai（上游 twitter 类别不含这些）
   - name: xai
     geosite: [xai]
+
+  # —— Apple 中国 CDN（2026-08-26）——
+  # 动因：Apple 的资源 CDN 域名散落且持续新增，落兜底代理即产生 GB 级本不必要的跨境流量。已实测两次：
+  # `updates.cdn-apple.com` 单次 5.9GB（iPadOS 系统更新）、`sylvan.apple.com` 单小时 23.4GB
+  # （macOS 航拍屏保 4K 视频，10 分钟 119 连接 ≈ 312Mbps 持续）。两次都是消费端在订阅模板里
+  # **手工内联域名清单**、而清单漏了那个域名 —— 手工维护全量清单已被证伪，故收进本层用上游
+  # 权威清单（apple.china.conf，钉定 SHA 版 163 条，社区长期维护）。
+  #
+  # ⚠ 语义边界：该清单原用途是 **DNS 分流**（这些域名用国内 DNS 解析），与「应该直连」高度
+  # 重合但不等价；且全量含 apps/itunes/music/appleid/guzzoni(Siri) 等**账号敏感**服务。
+  # 本层只做事实聚合出全量，**策略交消费端**：若只想放行下载/更新 CDN，在本类别之前用精确
+  # 规则把交互类摘走（同 google/xai 的「规则顺序组合出边界」，见上）。**纯加法**：cn 类别不变。
+  - name: apple-cn
+    chinalist: dnsmasq-china-list-apple
