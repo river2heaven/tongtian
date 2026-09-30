@@ -42,7 +42,7 @@ https://cdn.jsdelivr.net/gh/river2heaven/tongtian@ruleset-20260610-1605/dist/<�
 
 | 类别 | clash | sing-box | surge / sr / egern | anywhere | xray / v2ray |
 |------|-------|----------|--------------------|----------|--------------|
-| `cn` `reject` `gfw` `youtube` `github` `cloudflare` `telegram` `twitter` `ai-bulk` | **`.mrs`**（`behavior: domain`） | `.srs` | `.list` | `.arrs`（cn/reject 超 10k 不产） | `geosite:<tag>` |
+| `cn` `reject` `gfw` `youtube` `github` `cloudflare` `telegram` `twitter` `huggingface` | **`.mrs`**（`behavior: domain`） | `.srs` | `.list` | `.arrs`（cn/reject 超 10k 不产） | `geosite:<tag>` |
 | `geoip-cn` | **`.mrs`**（`behavior: ipcidr`） | `.srs` | `.list` | `.arrs`（~4k CIDR） | —（IP 侧不进 geosite.dat） |
 | `netflix` `ai` `disney`（含 regex/keyword，mrs 不支持） | `.list`（`behavior: classical`） | `.srs` | `.list` | `.arrs`（regex 行丢弃） | `geosite:<tag>` |
 

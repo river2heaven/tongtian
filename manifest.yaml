@@ -136,20 +136,17 @@ categories:
   - name: xai
     geosite: [xai]
 
-  # —— AI 大流量分发（2026-09-30）——
-  # 动因：ai 类别按「服务类型」聚合，消费端常把它指向**带宽小但 IP 干净**的出口（如家宽），
-  # 以通过 AI 服务的风控。但其中的模型 / 数据集托管站是 GB 级大文件下载，对出口 IP 类型
-  # 不敏感，却被一并塞进小带宽出口 —— 实测 Hugging Face 下载在家宽出口上单连接不到 1 MB/s。
-  # 「该走哪条线」在 AI 内部就分叉成两种需求：会话类要 IP 干净，分发类要带宽。
+  # —— Hugging Face（2026-09-30）——
+  # 动因：huggingface 原本只在 ai 类别里（dlc category-ai-!cn include 了它）。消费端常把 ai
+  # 指向**带宽小但 IP 干净**的出口（如家宽）以通过 AI 会话的风控；而 Hugging Face 是 GB 级
+  # 模型 / 数据集下载，要的是带宽、对出口 IP 类型不敏感 —— 实测在家宽出口上单连接不到 1 MB/s。
+  # 它的流量形态更像 youtube / netflix（大流量、单一服务商），故同样单列一个服务商类别，
+  # 让消费端能给它独立选出口。
   #
-  # 解法同 google / xai：本层单列「大流量、IP 不敏感」的 AI 分发域名，消费端用规则顺序组合，
-  # `RULE-SET,ai-bulk → 大带宽出口` 排在 `RULE-SET,ai` 之前即可摘出。
+  # 用法同 google / xai：`RULE-SET,huggingface` 排在 `RULE-SET,ai` **之前**即可摘出。
   # **纯加法**：ai 类别不变（仍含 huggingface），不使用本类别者零影响。
-  #
-  # 收录范围：dlc huggingface（hf.co / hf.space / huggingface.co，上游维护，不手工内联）。
-  # 其它候选（如 ollama 模型仓）刻意不预收 —— 手工猜清单已被 apple-cn 一役证伪，遇到实际
-  # 大流量再按同样判据（大文件分发 + IP 不敏感）加入。
-  - name: ai-bulk
+  # 收录 = dlc huggingface（hf.co / hf.space / huggingface.co），上游维护、不手工内联。
+  - name: huggingface
     geosite: [huggingface]
 
   # —— Apple 中国 CDN（2026-08-26）——
