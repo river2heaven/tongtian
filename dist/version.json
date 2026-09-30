@@ -1,7 +1,6 @@
 {
   "categories": {
     "ai": 191,
-    "ai-bulk": 3,
     "apple-cn": 163,
     "china-company-ip": 2112,
     "cloudflare": 74,
@@ -11,6 +10,7 @@
     "gfw": 4177,
     "github": 61,
     "google": 1054,
+    "huggingface": 3,
     "netflix": 28,
     "reject": 263621,
     "telegram": 21,
@@ -18,7 +18,7 @@
     "xai": 3,
     "youtube": 177
   },
-  "tag": "ruleset-20260930-1410",
+  "tag": "ruleset-20260930-1557",
   "upstreams": {
     "ai-fmz200": "9c74d2bc3cea5c869f7a6c1b06571d285b4a3f78",
     "anti-ad": "a8f65d8043940b20ba7ee75d402c60b885e547e6",
