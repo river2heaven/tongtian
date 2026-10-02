@@ -149,6 +149,23 @@ categories:
   - name: huggingface
     geosite: [huggingface]
 
+  # —— AI 三大厂按服务商单列（2026-10-02）——
+  # 动因：消费端想给不同 AI 服务各自选出口（如某家只认特定地区 / 住宅 IP，另一家对出口无所谓），
+  # 而 ai 类别把它们混在一起。同 huggingface：按服务商切、策略交消费端。
+  #
+  # 用法：`RULE-SET,anthropic` / `RULE-SET,openai` 排在 `RULE-SET,ai` **之前**即可摘出；
+  # `RULE-SET,gemini` 要排在 `RULE-SET,google` **之前**（google 类别 include 了 google-deepmind）。
+  # 账号边界提醒（见上 google 段）：Gemini 与 Google 账号若指向不同出口，同一会话会出现两个源 IP。
+  # **纯加法**：ai / google 类别不变，不使用者零影响。
+  # 只取 dlc 的域名（上游维护）；ai-fmz200 长尾里的厂商 IP-CIDR 仍只在 ai 类别。
+  - name: anthropic                      # Claude：anthropic.com / claude.ai / claude.com …
+    geosite: [anthropic]
+  - name: openai                         # ChatGPT / API / Sora：chatgpt.com / openai.com / oaistatic …
+    geosite: [openai]
+    exclude_attrs: [ads]                 # 上游 openai 里带 @ads 的是第三方埋点（sentry / datadog）
+  - name: gemini                         # Google AI：gemini / aistudio / notebooklm / jules / labs …
+    geosite: [google-gemini]
+
   # —— Apple 中国 CDN（2026-08-26）——
   # 动因：Apple 的资源 CDN 域名散落且持续新增，落兜底代理即产生 GB 级本不必要的跨境流量。已实测两次：
   # `updates.cdn-apple.com` 单次 5.9GB（iPadOS 系统更新）、`sylvan.apple.com` 单小时 23.4GB
