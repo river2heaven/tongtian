@@ -42,9 +42,9 @@ https://cdn.jsdelivr.net/gh/river2heaven/tongtian@ruleset-20260610-1605/dist/<�
 
 | 类别 | clash | sing-box | surge / sr / egern | anywhere | xray / v2ray |
 |------|-------|----------|--------------------|----------|--------------|
-| `cn` `reject` `gfw` `youtube` `github` `cloudflare` `telegram` `twitter` `huggingface` | **`.mrs`**（`behavior: domain`） | `.srs` | `.list` | `.arrs`（cn/reject 超 10k 不产） | `geosite:<tag>` |
+| `cn` `reject` `gfw` `youtube` `github` `cloudflare` `telegram` `twitter` `huggingface` `anthropic` `gemini` | **`.mrs`**（`behavior: domain`） | `.srs` | `.list` | `.arrs`（cn/reject 超 10k 不产） | `geosite:<tag>` |
 | `geoip-cn` | **`.mrs`**（`behavior: ipcidr`） | `.srs` | `.list` | `.arrs`（~4k CIDR） | —（IP 侧不进 geosite.dat） |
-| `netflix` `ai` `disney`（含 regex/keyword，mrs 不支持） | `.list`（`behavior: classical`） | `.srs` | `.list` | `.arrs`（regex 行丢弃） | `geosite:<tag>` |
+| `netflix` `ai` `disney` `openai`（含 regex/keyword，mrs 不支持） | `.list`（`behavior: classical`） | `.srs` | `.list` | `.arrs`（regex 行丢弃） | `geosite:<tag>` |
 
 > xray/v2ray 列指**单文件** `geosite.dat` 里的 tag（非 per-category 文件）：domain 侧规则（DOMAIN / -SUFFIX / -KEYWORD / -REGEX）全进，IP-CIDR 跳过（属 geoip.dat）。`geoip-cn` 这类纯 IP 类目仍占一个空 tag。
 
