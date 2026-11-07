@@ -1,3 +1,6 @@
+DOMAIN,alibaba.cdn.steampipe.steamcontent.com
+DOMAIN,lv.queniujq.cn
+DOMAIN,xz.pphimalayanrt.com
 DOMAIN-SUFFIX,0.xn--czrs0t
 DOMAIN-SUFFIX,0.xn--unup4y
 DOMAIN-SUFFIX,0.zone
@@ -23463,6 +23466,7 @@ DOMAIN-SUFFIX,clicksdiy.com
 DOMAIN-SUFFIX,clicksun.net
 DOMAIN-SUFFIX,clickwifi.net
 DOMAIN-SUFFIX,clidone.com
+DOMAIN-SUFFIX,client-update.queniuqe.com
 DOMAIN-SUFFIX,client51.com
 DOMAIN-SUFFIX,clifford-hospital.org
 DOMAIN-SUFFIX,cliffordtrading.com
@@ -26411,6 +26415,7 @@ DOMAIN-SUFFIX,csghy.com
 DOMAIN-SUFFIX,csgjhzzx.com
 DOMAIN-SUFFIX,csgjjt.com
 DOMAIN-SUFFIX,csgkjt.com
+DOMAIN-SUFFIX,csgo.wmsj.cn
 DOMAIN-SUFFIX,csgocn.net
 DOMAIN-SUFFIX,csgongshui.com
 DOMAIN-SUFFIX,csgpc.org
@@ -29790,6 +29795,7 @@ DOMAIN-SUFFIX,dl-rc.com
 DOMAIN-SUFFIX,dl.delivery.mp.microsoft.com
 DOMAIN-SUFFIX,dl.djicdn.com
 DOMAIN-SUFFIX,dl.razerzone.com
+DOMAIN-SUFFIX,dl.steam.clngaa.com
 DOMAIN-SUFFIX,dl0728.com
 DOMAIN-SUFFIX,dl23zx.com
 DOMAIN-SUFFIX,dl2link.com
@@ -30450,6 +30456,7 @@ DOMAIN-SUFFIX,dossen.com
 DOMAIN-SUFFIX,dostor.com
 DOMAIN-SUFFIX,dosxs.com
 DOMAIN-SUFFIX,dot.pub
+DOMAIN-SUFFIX,dota2.wmsj.cn
 DOMAIN-SUFFIX,dotaindex.com
 DOMAIN-SUFFIX,dotamax.com
 DOMAIN-SUFFIX,dotcpp.com
@@ -39797,6 +39804,7 @@ DOMAIN-SUFFIX,gsswtz.com
 DOMAIN-SUFFIX,gst.prod.dl.playstation.net
 DOMAIN-SUFFIX,gstarcad.com
 DOMAIN-SUFFIX,gstonegames.com
+DOMAIN-SUFFIX,gstore.val.manlaxy.com
 DOMAIN-SUFFIX,gstsz.com
 DOMAIN-SUFFIX,gstzyyy.com
 DOMAIN-SUFFIX,gswjxjzx.com
@@ -85234,6 +85242,9 @@ DOMAIN-SUFFIX,sszjnc.com
 DOMAIN-SUFFIX,sszsj.cc
 DOMAIN-SUFFIX,st-jzx.com
 DOMAIN-SUFFIX,st-recovery.com
+DOMAIN-SUFFIX,st.dl.bscstorage.net
+DOMAIN-SUFFIX,st.dl.eccdnx.com
+DOMAIN-SUFFIX,st.dl.pinyuncloud.com
 DOMAIN-SUFFIX,st001.com
 DOMAIN-SUFFIX,st12121.net
 DOMAIN-SUFFIX,st123.com
@@ -85386,10 +85397,12 @@ DOMAIN-SUFFIX,steamdt.com
 DOMAIN-SUFFIX,steamgift.site
 DOMAIN-SUFFIX,steamhost.info
 DOMAIN-SUFFIX,steammm.com
+DOMAIN-SUFFIX,steampowered.com.8686c.com
 DOMAIN-SUFFIX,steampp.net
 DOMAIN-SUFFIX,steamproxy.net
 DOMAIN-SUFFIX,steampy.com
 DOMAIN-SUFFIX,steamrepcn.com
+DOMAIN-SUFFIX,steamstatic.com.8686c.com
 DOMAIN-SUFFIX,stec.net
 DOMAIN-SUFFIX,stecn.org
 DOMAIN-SUFFIX,stedu.net
@@ -96942,6 +96955,7 @@ DOMAIN-SUFFIX,wmpyol.com
 DOMAIN-SUFFIX,wmqt.net
 DOMAIN-SUFFIX,wmqzyyy.com
 DOMAIN-SUFFIX,wms100.com
+DOMAIN-SUFFIX,wmsjsteam.com
 DOMAIN-SUFFIX,wmsjyun.com
 DOMAIN-SUFFIX,wmslz.com
 DOMAIN-SUFFIX,wmsub.com
