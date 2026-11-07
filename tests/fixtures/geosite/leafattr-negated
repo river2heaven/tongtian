@@ -1,0 +1,2 @@
+# 子 include 自带 @!cn: 不能靠继承 requireAttr 实现, 否则这里的条目会混进结果
+negated-store.example @!cn

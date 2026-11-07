@@ -85,7 +85,7 @@ func (r *Resolver) ResolveCategory(cat Category) ([]ruleset.Rule, error) {
 			return nil, err
 		}
 		for _, gc := range cat.Geosite {
-			rs, err := g.Resolve(gc, cat.ExcludeAttrs)
+			rs, err := g.ResolveLeafAttr(gc, cat.GeositeRequireAttr, cat.ExcludeAttrs)
 			if err != nil {
 				return nil, err
 			}

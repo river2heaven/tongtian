@@ -117,12 +117,20 @@ func parseGeositeLine(line string) (rawEntry, bool) {
 //	excludeAttrs: manifest 级全局排除（如某流媒体类排掉 @ads 条目）。
 //	所有产物无策略 —— rule-set 文件只含 matcher，策略在订阅引用 RULE-SET 时施加。
 func (g *Geosite) Resolve(category string, excludeAttrs []string) ([]ruleset.Rule, error) {
+	return g.ResolveLeafAttr(category, "", excludeAttrs)
+}
+
+// ResolveLeafAttr 同 Resolve，另外要求每个叶子都带 leafAttr（空串表示不要求）。
+//
+// 不能复用 include 的 requireAttr：子 include 自带 @attr 时会覆盖继承值（见 resolve），
+// 上游写 `include:child @!cn` 时，`child` 里不带 @cn 的条目就混进来了。
+func (g *Geosite) ResolveLeafAttr(category, leafAttr string, excludeAttrs []string) ([]ruleset.Rule, error) {
 	if _, ok := g.categories[category]; !ok {
 		return nil, fmt.Errorf("geosite 类别不存在: %s", category)
 	}
 	seen := make(map[string]bool)
 	var out []ruleset.Rule
-	g.resolve(category, "", excludeAttrs, map[string]bool{}, seen, &out)
+	g.resolve(category, "", leafAttr, excludeAttrs, map[string]bool{}, seen, &out)
 	// 稳定排序，golden 可比对
 	sort.Slice(out, func(i, j int) bool {
 		if out[i].Match != out[j].Match {
@@ -133,7 +141,7 @@ func (g *Geosite) Resolve(category string, excludeAttrs []string) ([]ruleset.Rul
 	return out, nil
 }
 
-func (g *Geosite) resolve(category, requireAttr string, excludeAttrs []string, visiting, seen map[string]bool, out *[]ruleset.Rule) {
+func (g *Geosite) resolve(category, requireAttr, leafAttr string, excludeAttrs []string, visiting, seen map[string]bool, out *[]ruleset.Rule) {
 	if visiting[category] {
 		return // 环保护
 	}
@@ -147,10 +155,13 @@ func (g *Geosite) resolve(category, requireAttr string, excludeAttrs []string, v
 			if childRequire == "" {
 				childRequire = requireAttr
 			}
-			g.resolve(e.value, childRequire, excludeAttrs, visiting, seen, out)
+			g.resolve(e.value, childRequire, leafAttr, excludeAttrs, visiting, seen, out)
 			continue
 		}
 		if requireAttr != "" && !hasAttr(e.attrs, requireAttr) {
+			continue
+		}
+		if leafAttr != "" && !hasAttr(e.attrs, leafAttr) {
 			continue
 		}
 		if hasAnyAttr(e.attrs, excludeAttrs) {

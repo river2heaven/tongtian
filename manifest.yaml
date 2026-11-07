@@ -73,9 +73,14 @@ categories:
 
   # —— CN 域名 + GEOIP-CN + GFW（新血统）——
   # cn = dnsmasq-china-list ∪ data/cn-extra.txt（仓内 curated 种子，补上游缺口，如 Bambu Lab）
+  #      ∪ dlc steam@cn（Steam 的国内 CDN，上游维护，新增 CDN 自动跟进）。
+  # geosite_require_attr 只筛 geosite 这一路：steam 里不带 @cn 的商店 / 社区域名不进 cn，
+  # chinalist 和 localdomains 不受影响。
   - name: cn
     chinalist: dnsmasq-china-list
     localdomains: data/cn-extra.txt
+    geosite: [steam]
+    geosite_require_attr: cn
   - name: geoip-cn
     geoip: chnroutes2
   - name: gfw
@@ -148,6 +153,19 @@ categories:
   # 收录 = dlc huggingface（hf.co / hf.space / huggingface.co），上游维护、不手工内联。
   - name: huggingface
     geosite: [huggingface]
+
+  # —— Steam（2026-11-07）——
+  # 动因：游戏下载动辄上百 GB，走节点既贵又占配额。国内 CDN 由 cn 类别直连（见上），
+  # 本类别只留商店、社区、API、图片这些必须走代理的域名，让消费端给它们单独选出口。
+  # exclude_attrs 只丢带 @cn 的行，不是集合相减：alibaba.cdn.steampipe.steamcontent.com 同时被
+  # 本类别的 steamcontent.com 覆盖。游戏内容和登录连接的直连由消费端用内联规则保证，排在
+  # RULE-SET,steam 之前（规则集加载失败时也要直连，所以不放进规则集）。
+  #
+  # 用法：`RULE-SET,steam` 排在 `RULE-SET,gfw` **之前**（gfw 含 steamstatic.com、store.steampowered.com）。
+  # 不使用本类别者只受 cn 新增条目的影响。
+  - name: steam
+    geosite: [steam]
+    exclude_attrs: [cn]
 
   # —— AI 三大厂按服务商单列（2026-10-02）——
   # 动因：消费端想给不同 AI 服务各自选出口（如某家只认特定地区 / 住宅 IP，另一家对出口无所谓），
