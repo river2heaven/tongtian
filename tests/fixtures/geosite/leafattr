@@ -1,0 +1,8 @@
+# geosite_require_attr 夹具: 模拟上游 steam 的形状
+cdn.example @cn
+full:exact-cdn.example @cn
+store.example
+tagged.example @ads @cn
+include:leafattr-negated @!cn
+include:leafattr-plain
+include:leafattr-cdnonly @cdn

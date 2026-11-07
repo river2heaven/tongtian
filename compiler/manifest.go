@@ -50,17 +50,22 @@ type UpstreamRef struct {
 //	               用于修上游清单的误杀（如广告库把某家的媒体 CDN 一并封掉，
 //	               导致该 App 图片/媒体加载失败），不必因个别误判整个弃用上游。
 //	               只作用于 DOMAIN / DOMAIN-SUFFIX 规则，不动 IP-CIDR 与 keyword/regex。
+//	geosite_require_attr → 只筛 geosite 这一路：结果里每个 geosite 叶子都必须带该属性，不管中间
+//	               经过什么 include；不碰 chinalist / localdomains 等其它输入源。与 include 行
+//	               自带的 @attr 是“且”的关系，不会被它覆盖。用于把上游类别里的一部分
+//	               并进别的类别（如 cn 并入 steam@cn），配了但 geosite 为空时校验报错。
 type Category struct {
-	Name           string   `yaml:"name"`
-	Geosite        []string `yaml:"geosite"`
-	ExcludeAttrs   []string `yaml:"exclude_attrs"`
-	ChinaList      string   `yaml:"chinalist"`
-	GFWList        string   `yaml:"gfwlist"`
-	GeoIP          string   `yaml:"geoip"`
-	DomainLists    []string `yaml:"domainlists"`
-	LocalFile      string   `yaml:"localfile"`
-	LocalDomains   string   `yaml:"localdomains"`
-	ExcludeDomains string   `yaml:"exclude_domains"`
+	Name               string   `yaml:"name"`
+	Geosite            []string `yaml:"geosite"`
+	GeositeRequireAttr string   `yaml:"geosite_require_attr"`
+	ExcludeAttrs       []string `yaml:"exclude_attrs"`
+	ChinaList          string   `yaml:"chinalist"`
+	GFWList            string   `yaml:"gfwlist"`
+	GeoIP              string   `yaml:"geoip"`
+	DomainLists        []string `yaml:"domainlists"`
+	LocalFile          string   `yaml:"localfile"`
+	LocalDomains       string   `yaml:"localdomains"`
+	ExcludeDomains     string   `yaml:"exclude_domains"`
 }
 
 // LoadManifest 读取并解析 manifest.yaml（不校验；调用方再调 Validate）。
@@ -144,6 +149,9 @@ func (m *Manifest) Validate() error {
 		// 否则 ResolveCategory 会在运行期才炸（fail-fast 提前到校验期）。
 		if len(cat.Geosite) > 0 && !hasGeositeUpstream {
 			return fmt.Errorf("类别 %q 引用 geosite 类目，但 manifest 无 geosite 上游（无上游设 data_dir）", cat.Name)
+		}
+		if cat.GeositeRequireAttr != "" && len(cat.Geosite) == 0 {
+			return fmt.Errorf("类别 %q 配了 geosite_require_attr 但 geosite 为空（字段不起作用，多半写错了）", cat.Name)
 		}
 		// localfile / localdomains / exclude_domains 必须是仓内相对路径
 		// （挡绝对路径 / .. 越权，防坏 manifest 读仓外文件）。
