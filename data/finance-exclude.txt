@@ -1,0 +1,37 @@
+# finance 类别剔除清单（curated）—— 交易所的**国别站**，不进 finance。
+#
+# 动因：finance 只收主站。国别站是独立持牌主体，账号不与主站互通，风控要求的出口地区
+# 也不同（如 Binance.US 只服务美国用户，主站反而不接美国 IP）；混进同一出口会让国别站失效。
+# 上游 dlc 的 binance 清单收了 binance.us，日后也可能给 bybit 等补国别站，故在这里统一减掉。
+#
+# 语义：按域名树剔除（写 example.com 即剔除它和所有子域），在全部输入源并集之后执行。
+# 证据：2026-11-26 逐个访问确认域名存在（301 跳到各自站点，或 403/451 地区拦截）。
+# 格式：裸域名；也接受 clash 规则行（TYPE,value）；# 注释。
+
+# —— Binance ——
+# Binance.US（美国）
+binance.us
+# Gulf Binance（泰国）
+binance.th
+# Binance TR（土耳其）
+trbinance.com
+# Binance Kazakhstan
+binance.kz
+# 俄罗斯站（Binance 2023 年退出俄罗斯，域名已不可达）
+binanceru.net
+
+# —— Bybit ——
+# Bybit EU
+bybit.eu
+# Bybit Netherlands
+bybit.nl
+# Bybit Kazakhstan
+bybit.kz
+# Bybit Indonesia
+bybit.id
+# Bybit TR（土耳其）
+bybit-tr.com
+
+# —— Bitget ——
+# Bitget EU
+bitget.eu

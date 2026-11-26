@@ -197,3 +197,26 @@ categories:
   # 规则把交互类摘走（同 google/xai 的「规则顺序组合出边界」，见上）。**纯加法**：cn 类别不变。
   - name: apple-cn
     chinalist: dnsmasq-china-list-apple
+
+  # —— 金融（2026-11-26）——
+  # 动因：交易所、券商、银行的风控都看登录 IP：出口地区不对就拒绝注册 / 冻结提现，出口来回
+  # 变就要求重新验证。这类流量要单独选一个**固定、干净**的出口，而它们原本散落在 gfw 和兜底
+  # 两处，跟着其他流量一起切换。
+  #
+  # 收录：币圈 CEX 主站（Binance / OKX / Bybit / Bitget / KuCoin / Gate / HTX / MEXC /
+  # Coinbase / Kraken）+ 美国券商 + 美国银行。**只收主站，不收国别站**（Binance.US、
+  # Bybit EU、bitget.eu …）——国别站是独立主体，要的出口地区和主站不同。
+  # - 交易所用 dlc 的厂商清单：自带 API / 静态资源域名，上游持续跟进；
+  # - dlc 没有单独清单的（Bitget / MEXC / Coinbase、券商、银行）写在 data/finance-extra.txt；
+  #   ibkr / schwab 的 dlc 清单混着国别站，故也改用仓内清单只收主站；
+  # - 国别站在 data/finance-exclude.txt 统一减掉（dlc binance 收了 binance.us）。
+  #
+  # ⚠ 出口提醒：Binance / OKX / Bybit / Bitget 等主站不接受美国 IP（美国用户归国别站），
+  #   所以本类别整体指向一个出口时，那个出口不能在美国；策略由消费端决定。
+  # 用法：`RULE-SET,finance` 排在 `RULE-SET,gfw` **之前**（gfw 含 binance / okx 等）。
+  # **纯加法**：其他类别不变，不使用者零影响。
+  - name: finance
+    geosite: [binance, okx, bybit, kucoin, gateio, huobi, kraken]
+    exclude_attrs: [ads]
+    localdomains: data/finance-extra.txt
+    exclude_domains: data/finance-exclude.txt
