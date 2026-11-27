@@ -1,32 +1,9 @@
-# finance 类别补充种子（curated）—— dlc 没有单独清单（或清单混着国别站）的金融服务主站。
-# 与 geosite 交易所清单并集进 finance 类别，再减去 data/finance-exclude.txt。
+# us-finance 类别（curated）—— 美国券商与美国银行的**主站**（美国本土站）。
 #
-# 收录标准：**主站**（全球站 / 美国本土站），不收国别站（如 bitget.eu、schwab.co.uk、
-# interactivebrokers.com.hk）。主站自有的静态 / API 域名一并收录，让同一会话的页面、
-# 接口和静态资源走同一出口。
-# 证据：2026-11-26 抓各主站首页，统计页面引用的品牌自有域名；第三方 CDN（akamai、
-# contentstack、ctfassets 等）不收。另经 DoH 核对 NS 与主域同属一家。
+# 不收国别站（如 schwab.co.uk、interactivebrokers.com.hk、citibank.com.hk）。主站自有的静态 / API 域名一并收录。
+# 证据：2026-11-26 抓各主站首页，统计页面引用的品牌自有域名；第三方 CDN（akamai、contentstack、
+# ctfassets 等）不收。另经 DoH 核对 NS 与主域同属一家。
 # 格式：裸域名（DOMAIN-SUFFIX 语义）；也接受 clash 规则行（TYPE,value）；# 注释。
-
-# ======== 币圈 CEX（dlc 没有单独清单的）========
-# Bitget：首页引用 bgbstatic / bgstatic / bitget.site / bitgetapp / btsgtm；
-# bitgetapps / bitgetimg 为 App 与图片域名（NS 同为 bitget 的 AWS 账号）
-bitget.com
-bgbstatic.com
-bgstatic.com
-bitget.site
-bitgetapp.com
-bitgetapps.com
-bitgetimg.com
-btsgtm.com
-# MEXC（dlc category-cryptocurrency 里的内联条目）
-mexc.com
-mexcsensors.com
-# Coinbase：cbhq.net 是静态资源域名（与 coinbase.com 同一 Cloudflare 账号）
-coinbase.com
-cbhq.net
-# Kraken：dlc kraken 只有 kraken.com / kraken.onl，补 Krak App
-krak.app
 
 # ======== 美国券商 ========
 schwab.com

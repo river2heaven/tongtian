@@ -198,25 +198,32 @@ categories:
   - name: apple-cn
     chinalist: dnsmasq-china-list-apple
 
-  # —— 金融（2026-11-26）——
+  # —— 金融：币圈交易所 / 美国金融（2026-11-27，取代 11-26 的合并类别 finance）——
   # 动因：交易所、券商、银行的风控都看登录 IP：出口地区不对就拒绝注册 / 冻结提现，出口来回
   # 变就要求重新验证。这类流量要单独选一个**固定、干净**的出口，而它们原本散落在 gfw 和兜底
   # 两处，跟着其他流量一起切换。
   #
-  # 收录：币圈 CEX 主站（Binance / OKX / Bybit / Bitget / KuCoin / Gate / HTX / MEXC /
-  # Coinbase / Kraken）+ 美国券商 + 美国银行。**只收主站，不收国别站**（Binance.US、
-  # Bybit EU、bitget.eu …）——国别站是独立主体，要的出口地区和主站不同。
-  # - 交易所用 dlc 的厂商清单：自带 API / 静态资源域名，上游持续跟进；
-  # - dlc 没有单独清单的（Bitget / MEXC / Coinbase、券商、银行）写在 data/finance-extra.txt；
-  #   ibkr / schwab 的 dlc 清单混着国别站，故也改用仓内清单只收主站；
-  # - 国别站在 data/finance-exclude.txt 统一减掉（dlc binance 收了 binance.us）。
+  # 为什么拆两类：两边要的出口地区相反。Binance / OKX / Bybit / Bitget 等主站不接受美国 IP
+  # （美国用户归国别站），而美国银行 / 券商对非美国 IP 常加验证。合成一类就只能二选一。
+  # 11-26 先发过合并类别 finance（tag ruleset-20261126-1612），发布当天无任何消费端引用即拆分；
+  # 旧 tag 不可变，仍可取到 finance。
   #
-  # ⚠ 出口提醒：Binance / OKX / Bybit / Bitget 等主站不接受美国 IP（美国用户归国别站），
-  #   所以本类别整体指向一个出口时，那个出口不能在美国；策略由消费端决定。
-  # 用法：`RULE-SET,finance` 排在 `RULE-SET,gfw` **之前**（gfw 含 binance / okx 等）。
+  # **只收主站，不收国别站**（Binance.US、Bybit EU、bitget.eu、schwab.co.uk …）——国别站是
+  # 独立主体，要的出口地区和主站不同。
+  # 用法：`RULE-SET,crypto` 排在 `RULE-SET,gfw` **之前**（gfw 含 binance / okx 等）。
   # **纯加法**：其他类别不变，不使用者零影响。
-  - name: finance
+
+  # crypto：CEX 主站（Binance / OKX / Bybit / Bitget / KuCoin / Gate / HTX / MEXC / Coinbase / Kraken）。
+  # - 交易所用 dlc 的厂商清单：自带 API / 静态资源域名，上游持续跟进；
+  # - dlc 没有单独清单的（Bitget / MEXC / Coinbase）写在 data/crypto-extra.txt；
+  # - 国别站在 data/crypto-exclude.txt 统一减掉（dlc binance 收了 binance.us）。
+  - name: crypto
     geosite: [binance, okx, bybit, kucoin, gateio, huobi, kraken]
     exclude_attrs: [ads]
-    localdomains: data/finance-extra.txt
-    exclude_domains: data/finance-exclude.txt
+    localdomains: data/crypto-extra.txt
+    exclude_domains: data/crypto-exclude.txt
+
+  # us-finance：美国券商 + 美国银行主站，全部仓内 curated（dlc 没有美国银行清单；ibkr / schwab
+  # 的 dlc 清单混着国别站，故不用）。
+  - name: us-finance
+    localdomains: data/us-finance.txt
