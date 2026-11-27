@@ -178,6 +178,12 @@ categories:
   # 只取 dlc 的域名（上游维护）；ai-fmz200 长尾里的厂商 IP-CIDR 仍只在 ai 类别。
   - name: anthropic                      # Claude：anthropic.com / claude.ai / claude.com …
     geosite: [anthropic]
+    localdomains: data/anthropic-extra.txt   # dlc 未收录的自有域名（claude.app）
+  # anthropic-deps：claude.ai 页面嵌入的第三方客服 / 支付 / 遥测主机名（Intercom / Stripe / Datadog），
+  # 只收实测到的精确主机名，详见 data/anthropic-deps.txt 头部。消费端与 anthropic 指同一出口，
+  # 让同一会话只有一个源 IP。**纯加法**：不使用者零影响。
+  - name: anthropic-deps
+    localdomains: data/anthropic-deps.txt
   - name: openai                         # ChatGPT / API / Sora：chatgpt.com / openai.com / oaistatic …
     geosite: [openai]
     exclude_attrs: [ads]                 # 上游 openai 里带 @ads 的是第三方埋点（sentry / datadog）
