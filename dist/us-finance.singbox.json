@@ -1,0 +1,49 @@
+{
+  "rules": [
+    {
+      "domain_suffix": [
+        "aexp-static.com",
+        "aexp.com",
+        "ally.com",
+        "americanexpress.com",
+        "bac-assets.com",
+        "bankofamerica.com",
+        "bofa.com",
+        "capitalone.com",
+        "chase.com",
+        "chasecdn.com",
+        "citi.com",
+        "citibank.com",
+        "discover.com",
+        "etrade.com",
+        "etrade.net",
+        "fidelity.com",
+        "firstrade.com",
+        "ibkr.com",
+        "interactivebrokers.com",
+        "jpmorgan.com",
+        "jpmorganchase.com",
+        "merrill.com",
+        "merrilledge.com",
+        "ml.com",
+        "pnc.com",
+        "public.com",
+        "robinhood.com",
+        "schwab.com",
+        "sofi.com",
+        "tastytrade.com",
+        "truist.com",
+        "usbank.com",
+        "vanguard.com",
+        "webull.com",
+        "webullfinance.com",
+        "webullfintech.com",
+        "wellsfargo.com",
+        "wellsfargomedia.com",
+        "wf.com",
+        "wfinterface.com"
+      ]
+    }
+  ],
+  "version": 2
+}

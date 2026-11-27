@@ -1,0 +1,16 @@
+DOMAIN,api-iam.intercom.io
+DOMAIN,api.stripe.com
+DOMAIN,browser-intake-us5-datadoghq.com
+DOMAIN,downloads.intercomcdn.com
+DOMAIN,http-intake.logs.us5.datadoghq.com
+DOMAIN,js.intercomcdn.com
+DOMAIN,js.stripe.com
+DOMAIN,m.stripe.com
+DOMAIN,m.stripe.network
+DOMAIN,merchant-ui-api.stripe.com
+DOMAIN,messenger-apps.intercom.io
+DOMAIN,nexus-websocket-a.intercom.io
+DOMAIN,primary-realtime.intercom-messenger.com
+DOMAIN,r.stripe.com
+DOMAIN,static.intercomassets.com
+DOMAIN,widget.intercom.io

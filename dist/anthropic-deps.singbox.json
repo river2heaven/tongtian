@@ -1,0 +1,25 @@
+{
+  "rules": [
+    {
+      "domain": [
+        "api-iam.intercom.io",
+        "api.stripe.com",
+        "browser-intake-us5-datadoghq.com",
+        "downloads.intercomcdn.com",
+        "http-intake.logs.us5.datadoghq.com",
+        "js.intercomcdn.com",
+        "js.stripe.com",
+        "m.stripe.com",
+        "m.stripe.network",
+        "merchant-ui-api.stripe.com",
+        "messenger-apps.intercom.io",
+        "nexus-websocket-a.intercom.io",
+        "primary-realtime.intercom-messenger.com",
+        "r.stripe.com",
+        "static.intercomassets.com",
+        "widget.intercom.io"
+      ]
+    }
+  ],
+  "version": 2
+}

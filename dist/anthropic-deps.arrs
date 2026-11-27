@@ -1,0 +1,17 @@
+name = anthropic-deps
+2, api-iam.intercom.io
+2, api.stripe.com
+2, browser-intake-us5-datadoghq.com
+2, downloads.intercomcdn.com
+2, http-intake.logs.us5.datadoghq.com
+2, js.intercomcdn.com
+2, js.stripe.com
+2, m.stripe.com
+2, m.stripe.network
+2, merchant-ui-api.stripe.com
+2, messenger-apps.intercom.io
+2, nexus-websocket-a.intercom.io
+2, primary-realtime.intercom-messenger.com
+2, r.stripe.com
+2, static.intercomassets.com
+2, widget.intercom.io

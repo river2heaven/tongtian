@@ -1,13 +1,14 @@
 {
   "categories": {
     "ai": 191,
-    "anthropic": 8,
+    "anthropic": 9,
+    "anthropic-deps": 16,
     "apple-cn": 163,
     "china-company-ip": 2112,
     "cloudflare": 74,
     "cn": 112518,
+    "crypto": 92,
     "disney": 161,
-    "finance": 132,
     "gemini": 39,
     "geoip-cn": 3917,
     "gfw": 4177,
@@ -20,10 +21,11 @@
     "steam": 39,
     "telegram": 21,
     "twitter": 24,
+    "us-finance": 40,
     "xai": 3,
     "youtube": 177
   },
-  "tag": "ruleset-20261126-1612",
+  "tag": "ruleset-20261127-0409",
   "upstreams": {
     "ai-fmz200": "9c74d2bc3cea5c869f7a6c1b06571d285b4a3f78",
     "anti-ad": "a8f65d8043940b20ba7ee75d402c60b885e547e6",
