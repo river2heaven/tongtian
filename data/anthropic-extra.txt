@@ -1,0 +1,6 @@
+# anthropic 类别补充种子（curated）—— Anthropic 自有、但 dlc anthropic 清单还没收录的域名。
+# 与 geosite anthropic 并集。dlc 收录后可删对应条目。
+# 格式：裸域名（DOMAIN-SUFFIX 语义）；# 注释。
+
+# claude.app：2026-11-26 DoH 解析到 160.79.104.10（Anthropic 自有段，与 claude.ai 同址），NS 在 Cloudflare
+claude.app

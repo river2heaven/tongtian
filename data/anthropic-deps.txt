@@ -1,0 +1,37 @@
+# anthropic-deps 类别（curated）—— claude.ai 页面加载的**第三方**主机名（客服 / 支付 / 遥测）。
+#
+# 动因：风控按会话看源 IP。claude.ai 本体走 anthropic 类别的出口，而它嵌入的 Intercom / Stripe /
+# Datadog 落在别的类别或兜底，同一个会话就出现两个甚至三个源 IP（2026-11-27 实测：本体美国家宽，
+# Intercom / Stripe 新加坡节点，Datadog 上报从国内直连）。本类别让消费端把它们钉到同一出口。
+#
+# 为什么不并进 anthropic：这些不是 Anthropic 的域名，是多家网站共用的 SaaS。
+# 收录标准：**只收精确主机名**（DOMAIN），不收 stripe.com / intercom.io 这类整域——后缀太宽会把
+#   别家网站的上报一起拉进 Claude 的出口。
+# 证据：2026-11-27 在已登录的 claude.ai 上依次打开首页、对话、账单页、帮助窗口，同时采样本机
+#   mihomo /connections，只收这段时间里出现、且属于 claude.ai 页面行为的主机名。没抓到的不收
+#   （Sentry、Sift 本次未出现）。
+# 已知取舍：别的网站也用 Stripe / Intercom 时，这些主机名同样走 Claude 的出口（都是小请求）。
+# 格式：clash 规则行（DOMAIN,host）；# 注释。
+
+# —— Intercom（帮助 / 客服窗口）——
+DOMAIN,widget.intercom.io
+DOMAIN,api-iam.intercom.io
+DOMAIN,nexus-websocket-a.intercom.io
+DOMAIN,messenger-apps.intercom.io
+DOMAIN,js.intercomcdn.com
+DOMAIN,downloads.intercomcdn.com
+DOMAIN,static.intercomassets.com
+DOMAIN,primary-realtime.intercom-messenger.com
+
+# —— Stripe（账单页）——
+DOMAIN,js.stripe.com
+DOMAIN,api.stripe.com
+DOMAIN,merchant-ui-api.stripe.com
+DOMAIN,r.stripe.com
+DOMAIN,m.stripe.com
+DOMAIN,m.stripe.network
+
+# —— Datadog（日志 / 浏览器上报，us5 站点）——
+# http-intake.logs.us5：本次采样命中 reject 走了直连；browser-intake-us5：未登录的登录页实测（2026-11-26）
+DOMAIN,http-intake.logs.us5.datadoghq.com
+DOMAIN,browser-intake-us5-datadoghq.com
